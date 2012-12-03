@@ -1,12 +1,5 @@
 package raval
 
-const (
-	rootDir        = "/"
-	welcomeMessage = "Welcome to the Go FTP Server"
-	USER           = "USER"
-	PASS           = "PASS"
-)
-
 type Array struct {
 	container []interface{}
 }

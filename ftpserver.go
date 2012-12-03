@@ -1,7 +1,6 @@
 package raval
 
 import (
-	"bufio"
 	"net"
 )
 
@@ -38,15 +37,7 @@ func (ftpServer *FTPServer) Listen() (err error) {
 func (ftpServer *FTPServer) Accept() (ftpConn *FTPConn, err error) {
 	tcpConn, err := ftpServer.listener.AcceptTCP()
 	if err == nil {
-		controlReader := bufio.NewReader(tcpConn)
-		controlWriter := bufio.NewWriter(tcpConn)
-		ftpConn = &FTPConn{
-			rootDir,
-			tcpConn,
-			controlReader,
-			controlWriter,
-			nil,
-		}
+		ftpConn = NewFTPConn(tcpConn)
 	}
 	return
 }

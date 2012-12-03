@@ -8,14 +8,28 @@ import (
 	"strings"
 )
 
+const (
+	welcomeMessage = "Welcome to the Go FTP Server"
+	USER           = "USER"
+	PASS           = "PASS"
+)
+
 type FTPConn struct {
 	cwd           string
-	control       *net.TCPConn
+	conn          *net.TCPConn
 	controlReader *bufio.Reader
 	controlWriter *bufio.Writer
 	data          *net.TCPConn
 }
 
+func NewFTPConn(tcpConn *net.TCPConn) *FTPConn {
+	c := new(FTPConn)
+	c.cwd = "/"
+	c.conn = tcpConn
+	c.controlReader = bufio.NewReader(tcpConn)
+	c.controlWriter = bufio.NewWriter(tcpConn)
+	return c
+}
 func (ftpConn *FTPConn) WriteMessage(messageFormat string, v ...interface{}) (wrote int, err error) {
 	message := fmt.Sprintf(messageFormat, v...)
 	wrote, err = ftpConn.controlWriter.WriteString(message)
@@ -58,7 +72,7 @@ func (ftpConn *FTPConn) Serve(terminated chan bool) {
 }
 
 func (ftpConn *FTPConn) Close() {
-	ftpConn.control.Close()
+	ftpConn.conn.Close()
 	if ftpConn.data != nil {
 		ftpConn.data.Close()
 	}
