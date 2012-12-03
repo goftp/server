@@ -157,7 +157,7 @@ func (ftpConn *FTPConn) Close() {
 }
 
 func main() {
-	laddr, err := net.ResolveTCPAddr("tcp","localhost:21")
+	laddr, err := net.ResolveTCPAddr("tcp","localhost:3000")
 	if err != nil {
 		log.Fatal(err)
 	}
