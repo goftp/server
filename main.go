@@ -1,4 +1,4 @@
-package main
+package raval
 
 import (
 	"bufio"
@@ -156,19 +156,3 @@ func (ftpConn *FTPConn) Close() {
 	}
 }
 
-func main() {
-	laddr, err := net.ResolveTCPAddr("tcp", "localhost:3000")
-	if err != nil {
-		log.Fatal(err)
-	}
-	listener, err := net.ListenTCP("tcp4", laddr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	ftpServer := &FTPServer{
-		"Go FTP Server",
-		listener,
-		new(Array),
-	}
-	log.Fatal(ftpServer.Listen())
-}
