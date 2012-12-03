@@ -1,34 +1,34 @@
 package main
 
 import (
-	"net"
-	"log"
 	"bufio"
 	"fmt"
+	"log"
+	"net"
 	"strings"
 )
 
 const (
-	rootDir = "/"
+	rootDir        = "/"
 	welcomeMessage = "Welcome to the Go FTP Server"
-	USER = "USER"
-	PASS = "PASS"
+	USER           = "USER"
+	PASS           = "PASS"
 )
 
 func getMessageFormat(command int) (messageFormat string) {
 	switch command {
-		case 220:
-			messageFormat = "220 %s"
-			break
-		case 230:
-			messageFormat = "230 %s"
-			break
-		case 331:
-			messageFormat = "331 %s"
-			break
-		case 500:
-			messageFormat = "500 %s"
-			break
+	case 220:
+		messageFormat = "220 %s"
+		break
+	case 230:
+		messageFormat = "230 %s"
+		break
+	case 331:
+		messageFormat = "331 %s"
+		break
+	case 500:
+		messageFormat = "500 %s"
+		break
 	}
 	return messageFormat + "\r\n"
 }
@@ -41,15 +41,15 @@ func (a *Array) Append(object interface{}) {
 	if a.container == nil {
 		a.container = make([]interface{}, 0)
 	}
-	newContainer := make([]interface{}, len(a.container) + 1)
+	newContainer := make([]interface{}, len(a.container)+1)
 	copy(newContainer, a.container)
-	newContainer[len(newContainer) - 1] = object
+	newContainer[len(newContainer)-1] = object
 	a.container = newContainer
 }
 
 func (a *Array) Remove(object interface{}) (result bool) {
 	result = false
-	newContainer := make([]interface{}, len(a.container) -1)
+	newContainer := make([]interface{}, len(a.container)-1)
 	i := 0
 	for _, target := range a.container {
 		if target != object {
@@ -63,8 +63,8 @@ func (a *Array) Remove(object interface{}) (result bool) {
 }
 
 type FTPServer struct {
-	name string
-	listener *net.TCPListener
+	name        string
+	listener    *net.TCPListener
 	connections *Array
 }
 
@@ -77,7 +77,7 @@ func (ftpServer *FTPServer) Listen() (err error) {
 		ftpServer.connections.Append(ftpConn)
 		terminated := make(chan bool)
 		go ftpConn.Serve(terminated)
-		<- terminated
+		<-terminated
 		ftpServer.connections.Remove(ftpConn)
 		ftpConn.Close()
 	}
@@ -101,14 +101,14 @@ func (ftpServer *FTPServer) Accept() (ftpConn *FTPConn, err error) {
 }
 
 type FTPConn struct {
-	cwd string
-	control *net.TCPConn
+	cwd           string
+	control       *net.TCPConn
 	controlReader *bufio.Reader
 	controlWriter *bufio.Writer
-	data *net.TCPConn
+	data          *net.TCPConn
 }
 
-func (ftpConn *FTPConn) WriteMessage(messageFormat string, v... interface{}) (wrote int, err error) {
+func (ftpConn *FTPConn) WriteMessage(messageFormat string, v ...interface{}) (wrote int, err error) {
 	message := fmt.Sprintf(messageFormat, v...)
 	wrote, err = ftpConn.controlWriter.WriteString(message)
 	ftpConn.controlWriter.Flush()
@@ -132,14 +132,14 @@ func (ftpConn *FTPConn) Serve(terminated chan bool) {
 		if count > 0 {
 			command := params[0]
 			switch command {
-				case USER:
-					ftpConn.WriteMessage(getMessageFormat(331), "User name ok, password required")
-					break
-				case PASS:
-					ftpConn.WriteMessage(getMessageFormat(230), "Password ok, continue")
-					break
-				default:
-					ftpConn.WriteMessage(getMessageFormat(500), "Command not found")
+			case USER:
+				ftpConn.WriteMessage(getMessageFormat(331), "User name ok, password required")
+				break
+			case PASS:
+				ftpConn.WriteMessage(getMessageFormat(230), "Password ok, continue")
+				break
+			default:
+				ftpConn.WriteMessage(getMessageFormat(500), "Command not found")
 			}
 		} else {
 			ftpConn.WriteMessage(getMessageFormat(500), "Syntax error, zero parameters")
@@ -157,7 +157,7 @@ func (ftpConn *FTPConn) Close() {
 }
 
 func main() {
-	laddr, err := net.ResolveTCPAddr("tcp","localhost:3000")
+	laddr, err := net.ResolveTCPAddr("tcp", "localhost:3000")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	ftpServer := &FTPServer {
+	ftpServer := &FTPServer{
 		"Go FTP Server",
 		listener,
 		new(Array),
