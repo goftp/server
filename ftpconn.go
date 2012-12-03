@@ -20,14 +20,18 @@ type FTPConn struct {
 	controlReader *bufio.Reader
 	controlWriter *bufio.Writer
 	data          *net.TCPConn
+	driver        FTPDriver
+	reqUser       string
+	user          string
 }
 
-func NewFTPConn(tcpConn *net.TCPConn) *FTPConn {
+func NewFTPConn(tcpConn *net.TCPConn, driver FTPDriver) *FTPConn {
 	c := new(FTPConn)
 	c.cwd = "/"
 	c.conn = tcpConn
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
+	c.driver = driver
 	return c
 }
 func (ftpConn *FTPConn) WriteMessage(messageFormat string, v ...interface{}) (wrote int, err error) {
@@ -55,10 +59,17 @@ func (ftpConn *FTPConn) Serve(terminated chan bool) {
 			command := params[0]
 			switch command {
 			case USER:
+			    ftpConn.reqUser = params[1]
 				ftpConn.WriteMessage(getMessageFormat(331), "User name ok, password required")
 				break
 			case PASS:
-				ftpConn.WriteMessage(getMessageFormat(230), "Password ok, continue")
+			    if ftpConn.driver.Authenticate(ftpConn.reqUser, params[1]) {
+				    ftpConn.user = ftpConn.reqUser
+					ftpConn.reqUser = ""
+					ftpConn.WriteMessage(getMessageFormat(230), "Password ok, continue")
+				} else {
+					ftpConn.WriteMessage(getMessageFormat(530), "Incorrect password, not logged in")
+				}
 				break
 			default:
 				ftpConn.WriteMessage(getMessageFormat(500), "Command not found")
@@ -91,6 +102,9 @@ func getMessageFormat(command int) (messageFormat string) {
 		break
 	case 500:
 		messageFormat = "500 %s"
+		break
+	case 530:
+		messageFormat = "530 %s"
 		break
 	}
 	return messageFormat + "\r\n"

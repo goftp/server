@@ -10,12 +10,14 @@ type FTPServer struct {
 	name        string
 	listenTo    string
 	connections []*FTPConn
+	driverFactory FTPDriverFactory
 }
 
-func NewFTPServer(hostname string, port int) *FTPServer {
+func NewFTPServer(hostname string, port int, factory FTPDriverFactory) *FTPServer {
 	s := new(FTPServer)
 	s.listenTo = hostname + ":" + strconv.Itoa(port)
 	s.name = "Go FTP Server"
+	s.driverFactory = factory
 	return s
 }
 
@@ -62,7 +64,7 @@ func (ftpServer *FTPServer) indexOfConnection(ftpConn *FTPConn) int {
 func (ftpServer *FTPServer) Accept(listener *net.TCPListener) (ftpConn *FTPConn, err error) {
 	tcpConn, err := listener.AcceptTCP()
 	if err == nil {
-		ftpConn = NewFTPConn(tcpConn)
+		ftpConn = NewFTPConn(tcpConn, ftpServer.driverFactory.NewDriver())
 	}
 	return
 }
