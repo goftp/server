@@ -2,24 +2,34 @@ package raval
 
 import (
 	"net"
+	"strconv"
+	"log"
 )
 
 type FTPServer struct {
 	name        string
-	listener    *net.TCPListener
+	listenTo    string
 	connections []*FTPConn
 }
 
-func NewFTPServer(listener *net.TCPListener) *FTPServer {
+func NewFTPServer(hostname string, port int) *FTPServer {
 	s := new(FTPServer)
+	s.listenTo = hostname + ":" + strconv.Itoa(port)
 	s.name = "Go FTP Server"
-	s.listener = listener
 	return s
 }
 
 func (ftpServer *FTPServer) Listen() (err error) {
 	for {
-		ftpConn, err := ftpServer.Accept()
+		laddr, err := net.ResolveTCPAddr("tcp4", ftpServer.listenTo)
+		if err != nil {
+			log.Fatal(err)
+		}
+		listener, err := net.ListenTCP("tcp4", laddr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ftpConn, err := ftpServer.Accept(listener)
 		if err != nil {
 			break
 		}
@@ -49,8 +59,8 @@ func (ftpServer *FTPServer) indexOfConnection(ftpConn *FTPConn) int {
 	return -1
 }
 
-func (ftpServer *FTPServer) Accept() (ftpConn *FTPConn, err error) {
-	tcpConn, err := ftpServer.listener.AcceptTCP()
+func (ftpServer *FTPServer) Accept(listener *net.TCPListener) (ftpConn *FTPConn, err error) {
+	tcpConn, err := listener.AcceptTCP()
 	if err == nil {
 		ftpConn = NewFTPConn(tcpConn)
 	}
