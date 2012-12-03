@@ -10,7 +10,9 @@ Some sample use cases include persisting data to:
 * redis
 * memory
 
-*TODO* link to an example driver here
+There is a sample in-memory driver available on github:
+
+* [https://github.com/yob/graval-mem](https://github.com/yob/graval-mem)
 
 ## Installation
 
