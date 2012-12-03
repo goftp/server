@@ -20,15 +20,15 @@ func NewFTPServer(hostname string, port int) *FTPServer {
 }
 
 func (ftpServer *FTPServer) Listen() (err error) {
+	laddr, err := net.ResolveTCPAddr("tcp4", ftpServer.listenTo)
+	if err != nil {
+		log.Fatal(err)
+	}
+	listener, err := net.ListenTCP("tcp4", laddr)
+	if err != nil {
+		log.Fatal(err)
+	}
 	for {
-		laddr, err := net.ResolveTCPAddr("tcp4", ftpServer.listenTo)
-		if err != nil {
-			log.Fatal(err)
-		}
-		listener, err := net.ListenTCP("tcp4", laddr)
-		if err != nil {
-			log.Fatal(err)
-		}
 		ftpConn, err := ftpServer.Accept(listener)
 		if err != nil {
 			break
