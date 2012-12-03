@@ -1,9 +1,9 @@
 package graval
 
 import (
+	"bufio"
 	"fmt"
 	"log"
-	"bufio"
 	"net"
 	"strings"
 )
@@ -59,12 +59,12 @@ func (ftpConn *FTPConn) Serve(terminated chan bool) {
 			command := params[0]
 			switch command {
 			case USER:
-			    ftpConn.reqUser = params[1]
+				ftpConn.reqUser = params[1]
 				ftpConn.WriteMessage(getMessageFormat(331), "User name ok, password required")
 				break
 			case PASS:
-			    if ftpConn.driver.Authenticate(ftpConn.reqUser, params[1]) {
-				    ftpConn.user = ftpConn.reqUser
+				if ftpConn.driver.Authenticate(ftpConn.reqUser, params[1]) {
+					ftpConn.user = ftpConn.reqUser
 					ftpConn.reqUser = ""
 					ftpConn.WriteMessage(getMessageFormat(230), "Password ok, continue")
 				} else {
@@ -109,4 +109,3 @@ func getMessageFormat(command int) (messageFormat string) {
 	}
 	return messageFormat + "\r\n"
 }
-

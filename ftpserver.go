@@ -1,15 +1,15 @@
 package graval
 
 import (
+	"log"
 	"net"
 	"strconv"
-	"log"
 )
 
 type FTPServer struct {
-	name        string
-	listenTo    string
-	connections []*FTPConn
+	name          string
+	listenTo      string
+	connections   []*FTPConn
 	driverFactory FTPDriverFactory
 }
 
@@ -48,13 +48,13 @@ func (ftpServer *FTPServer) Listen() (err error) {
 func (ftpServer *FTPServer) removeConnection(ftpConn *FTPConn) {
 	i := ftpServer.indexOfConnection(ftpConn)
 	ftpServer.connections[i] = ftpServer.connections[len(ftpServer.connections)-1]
-	ftpServer.connections = ftpServer.connections[0:len(ftpServer.connections)-1]
+	ftpServer.connections = ftpServer.connections[0 : len(ftpServer.connections)-1]
 	return
 }
 
 func (ftpServer *FTPServer) indexOfConnection(ftpConn *FTPConn) int {
 	for p, v := range ftpServer.connections {
-		if (v == ftpConn) {
+		if v == ftpConn {
 			return p
 		}
 	}
@@ -68,4 +68,3 @@ func (ftpServer *FTPServer) Accept(listener *net.TCPListener) (ftpConn *FTPConn,
 	}
 	return
 }
-
