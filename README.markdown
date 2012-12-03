@@ -27,8 +27,19 @@ Once that's ready, boot a new server like so:
 
     import "github.com/yob/graval"
 
+    type MemDriver struct {}
+
+    .. implement MemDriver here ..
+
+    type MemDriverFactory struct {}
+
+    func (factory *MemDriverFactory) NewDriver() graval.FTPDriver {
+      return &MemDriver{}
+    }
+
     func main() {
-      ftpServer := graval.NewFTPServer("localhost", 3000)
+      factory := &MemDriverFactory{}
+      ftpServer := graval.NewFTPServer("localhost", 3000, factory)
       ftpServer.Listen()
     }
 
