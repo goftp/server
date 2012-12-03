@@ -2,7 +2,6 @@ package main
 
 import (
 	"net"
-	"os"
 	"log"
 	"bufio"
 	"fmt"
@@ -69,7 +68,7 @@ type FTPServer struct {
 	connections *Array
 }
 
-func (ftpServer *FTPServer) Listen() (err os.Error) {
+func (ftpServer *FTPServer) Listen() (err error) {
 	for {
 		ftpConn, err := ftpServer.Accept()
 		if err != nil {
@@ -85,7 +84,7 @@ func (ftpServer *FTPServer) Listen() (err os.Error) {
 	return
 }
 
-func (ftpServer *FTPServer) Accept() (ftpConn *FTPConn, err os.Error) {
+func (ftpServer *FTPServer) Accept() (ftpConn *FTPConn, err error) {
 	tcpConn, err := ftpServer.listener.AcceptTCP()
 	if err == nil {
 		controlReader := bufio.NewReader(tcpConn)
@@ -109,16 +108,16 @@ type FTPConn struct {
 	data *net.TCPConn
 }
 
-func (ftpConn *FTPConn) WriteMessage(messageFormat string, v... interface{}) (wrote int, err os.Error) {
+func (ftpConn *FTPConn) WriteMessage(messageFormat string, v... interface{}) (wrote int, err error) {
 	message := fmt.Sprintf(messageFormat, v...)
 	wrote, err = ftpConn.controlWriter.WriteString(message)
 	ftpConn.controlWriter.Flush()
-	log.Stdout(message)
+	log.Print(message)
 	return
 }
 
 func (ftpConn *FTPConn) Serve(terminated chan bool) {
-	log.Stdout("Connection Established")
+	log.Print("Connection Established")
 	// send welcome
 	ftpConn.WriteMessage(getMessageFormat(220), welcomeMessage)
 	// read commands
@@ -127,8 +126,8 @@ func (ftpConn *FTPConn) Serve(terminated chan bool) {
 		if err != nil {
 			break
 		}
-		log.Stdout(line)
-		params := strings.Split(strings.Trim(line, "\r\n"), " ", -1)
+		log.Print(line)
+		params := strings.Split(strings.Trim(line, "\r\n"), " ")
 		count := len(params)
 		if count > 0 {
 			command := params[0]
@@ -147,7 +146,7 @@ func (ftpConn *FTPConn) Serve(terminated chan bool) {
 		}
 	}
 	terminated <- true
-	log.Stdout("Connection Terminated")
+	log.Print("Connection Terminated")
 }
 
 func (ftpConn *FTPConn) Close() {
@@ -158,18 +157,18 @@ func (ftpConn *FTPConn) Close() {
 }
 
 func main() {
-	laddr, err := net.ResolveTCPAddr("localhost:21")
+	laddr, err := net.ResolveTCPAddr("tcp","localhost:21")
 	if err != nil {
-		log.Exit(err)
+		log.Fatal(err)
 	}
 	listener, err := net.ListenTCP("tcp4", laddr)
 	if err != nil {
-		log.Exit(err)
+		log.Fatal(err)
 	}
 	ftpServer := &FTPServer {
 		"Go FTP Server",
 		listener,
 		new(Array),
 	}
-	log.Exit(ftpServer.Listen())
+	log.Fatal(ftpServer.Listen())
 }
