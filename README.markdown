@@ -10,7 +10,7 @@ Some sample use cases include persisting data to:
 * redis
 * memory
 
-# TODO link to an example driver here
+*TODO* link to an example driver here
 
 ## Installation
 
