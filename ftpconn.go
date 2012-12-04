@@ -101,7 +101,7 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 // is all that is used for the mode - data is just streamed down the data
 // socket unchanged.
 func (ftpConn *FTPConn) cmdMode(param string) {
-	if param == "S" {
+	if strings.ToUpper(param) == "S" {
 		ftpConn.writeMessage(200, "OK")
 	} else {
 		ftpConn.writeMessage(504, "MODE is an obsolete command")
