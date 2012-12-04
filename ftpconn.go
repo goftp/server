@@ -71,9 +71,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	log.Print(line)
 	command, param := ftpConn.parseLine(line)
 	switch command {
-	case "USER":
-		ftpConn.cmdUser(param)
-		break
 	case "PASS":
 		ftpConn.cmdPass(param)
 		break
@@ -82,6 +79,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		break
 	case "SYST":
 		ftpConn.cmdSyst()
+		break
+	case "USER":
+		ftpConn.cmdUser(param)
 		break
 	default:
 		ftpConn.writeMessage(500, "Command not found")
