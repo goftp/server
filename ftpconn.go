@@ -79,6 +79,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "CWD":
 		ftpConn.cmdCwd(param)
 		break
+	case "DELE":
+		ftpConn.cmdDele(param)
+		break
 	case "MODE":
 		ftpConn.cmdMode(param)
 		break
@@ -129,6 +132,17 @@ func (ftpConn *FTPConn) cmdCwd(param string) {
 	if ftpConn.driver.ChangeDir(path) {
 		ftpConn.namePrefix = path
 		ftpConn.writeMessage(250, "Directory changed to " + path)
+	} else {
+		ftpConn.writeMessage(550, "Action not taken")
+	}
+}
+
+// cmdDele responds to the DELE FTP command. It allows the client to delete
+// a file
+func (ftpConn *FTPConn) cmdDele(param string) {
+	path := ftpConn.buildPath(param)
+	if ftpConn.driver.DeleteFile(path) {
+		ftpConn.writeMessage(250, "File deleted")
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
 	}
