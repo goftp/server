@@ -25,6 +25,10 @@ type FTPConn struct {
 	user          string
 }
 
+// NewFTPConn constructs a new object that will handle the FTP protocol over
+// an active net.TCPConn. The TCP connection should already be open before
+// it is handed to this functions. driver is an instance of FTPDrive that
+// will handle all auth and persistence details.
 func NewFTPConn(tcpConn *net.TCPConn, driver FTPDriver) *FTPConn {
 	c := new(FTPConn)
 	c.cwd = "/"
@@ -35,6 +39,11 @@ func NewFTPConn(tcpConn *net.TCPConn, driver FTPDriver) *FTPConn {
 	return c
 }
 
+// Serve starts an endless loop that reads FTP commands from the client and
+// responds appropriately. terminated is a channel that will receive a true
+// message when the connection closes. This loop will be running inside a
+// goroutine, so use this channel to be notified when the connection can be
+// cleaned up.
 func (ftpConn *FTPConn) Serve(terminated chan bool) {
 	log.Print("Connection Established")
 	// send welcome
@@ -50,6 +59,7 @@ func (ftpConn *FTPConn) Serve(terminated chan bool) {
 	log.Print("Connection Terminated")
 }
 
+// Close will manually close this connection, even if the client isn't ready.
 func (ftpConn *FTPConn) Close() {
 	ftpConn.conn.Close()
 	if ftpConn.data != nil {
@@ -57,6 +67,8 @@ func (ftpConn *FTPConn) Close() {
 	}
 }
 
+// receiveLine accepts a single line FTP command and co-ordinates an
+// appropriate response.
 func (ftpConn *FTPConn) receiveLine(line string) {
 	log.Print(line)
 	params := strings.Split(strings.Trim(line, "\r\n"), " ")
@@ -85,6 +97,7 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	}
 }
 
+// writeMessage will send a standard FTP response back to the client.
 func (ftpConn *FTPConn) writeMessage(messageFormat string, v ...interface{}) (wrote int, err error) {
 	message := fmt.Sprintf(messageFormat, v...)
 	wrote, err = ftpConn.controlWriter.WriteString(message)
