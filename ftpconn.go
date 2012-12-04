@@ -77,10 +77,10 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "ALLO":
 		ftpConn.cmdAllo()
 		break
-	case "CDUP":
+	case "CDUP", "XCUP":
 		ftpConn.cmdCdup()
 		break
-	case "CWD":
+	case "CWD", "XCWD":
 		ftpConn.cmdCwd(param)
 		break
 	case "DELE":
@@ -101,7 +101,7 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "QUIT":
 		ftpConn.Close()
 		break
-	case "RMD":
+	case "RMD", "XRMD":
 		ftpConn.cmdRmd(param)
 		break
 	case "RNFR":
