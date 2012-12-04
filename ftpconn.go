@@ -76,58 +76,40 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	switch command {
 	case "ALLO":
 		ftpConn.cmdAllo()
-		break
 	case "CDUP", "XCUP":
 		ftpConn.cmdCdup()
-		break
 	case "CWD", "XCWD":
 		ftpConn.cmdCwd(param)
-		break
 	case "DELE":
 		ftpConn.cmdDele(param)
-		break
 	case "MKD":
 		ftpConn.cmdMkd(param)
-		break
 	case "MODE":
 		ftpConn.cmdMode(param)
-		break
 	case "NOOP":
 		ftpConn.cmdNoop()
-		break
 	case "PASS":
 		ftpConn.cmdPass(param)
-		break
 	case "PWD", "XPWD":
 		ftpConn.cmdPwd()
-		break
 	case "QUIT":
 		ftpConn.Close()
-		break
 	case "RMD", "XRMD":
 		ftpConn.cmdRmd(param)
-		break
 	case "RNFR":
 		ftpConn.cmdRnfr(param)
-		break
 	case "RNTO":
 		ftpConn.cmdRnto(param)
-		break
 	case "SIZE":
 		ftpConn.cmdSize(param)
-		break
 	case "STRU":
 		ftpConn.cmdStru(param)
-		break
 	case "SYST":
 		ftpConn.cmdSyst()
-		break
 	case "TYPE":
 		ftpConn.cmdType(param)
-		break
 	case "USER":
 		ftpConn.cmdUser(param)
-		break
 	default:
 		ftpConn.writeMessage(500, "Command not found")
 	}
