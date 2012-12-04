@@ -77,16 +77,22 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "PASS":
 		ftpConn.cmdPass(param)
 		break
+	case "QUIT":
+		ftpConn.Close()
+		break
 	default:
 		ftpConn.writeMessage(500, "Command not found")
 	}
 }
 
+// cmdUser responds to the USER FTP command by asking for the password
 func (ftpConn *FTPConn) cmdUser(param string) {
 	ftpConn.reqUser = param
 	ftpConn.writeMessage(331, "User name ok, password required")
 }
 
+// cmdPass respond to the PASS FTP command by asking the driver if the supplied
+// username and password are valid
 func (ftpConn *FTPConn) cmdPass(param string) {
 	if ftpConn.driver.Authenticate(ftpConn.reqUser, param) {
 		ftpConn.user = ftpConn.reqUser
