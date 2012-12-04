@@ -136,7 +136,7 @@ func (ftpConn *FTPConn) cmdCwd(param string) {
 	path := ftpConn.buildPath(param)
 	if ftpConn.driver.ChangeDir(path) {
 		ftpConn.namePrefix = path
-		ftpConn.writeMessage(250, "Directory changed to " + path)
+		ftpConn.writeMessage(250, "Directory changed to "+path)
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
 	}
@@ -202,7 +202,7 @@ func (ftpConn *FTPConn) cmdPass(param string) {
 //
 // Tells the client what the current working directory is.
 func (ftpConn *FTPConn) cmdPwd() {
-	ftpConn.writeMessage(257, "\"" + ftpConn.namePrefix + "\" is the current directory")
+	ftpConn.writeMessage(257, "\""+ftpConn.namePrefix+"\" is the current directory")
 }
 
 // cmdRmd responds to the RMD FTP command. It allows the client to delete a
@@ -237,7 +237,7 @@ func (ftpConn *FTPConn) cmdRnto(param string) {
 // cmdSize responds to the SIZE FTP command. It returns the size of the
 // requested path in bytes.
 func (ftpConn *FTPConn) cmdSize(param string) {
-	path  := ftpConn.buildPath(param)
+	path := ftpConn.buildPath(param)
 	bytes := ftpConn.driver.Bytes(path)
 	if bytes >= 0 {
 		ftpConn.writeMessage(213, strconv.Itoa(bytes))
@@ -328,7 +328,7 @@ func (ftpConn *FTPConn) writeMessage(code int, message string) (wrote int, err e
 // The driver implementation is responsible for deciding how to treat this path.
 // Obviously they MUST NOT just read the path off disk. The probably want to
 // prefix the path with something to scope the users access to a sandbox.
-func (ftpConn *FTPConn) buildPath(filename string) (fullPath string){
+func (ftpConn *FTPConn) buildPath(filename string) (fullPath string) {
 	if filename[0:1] == "/" {
 		fullPath = filepath.Clean(filename)
 	} else if filename != "" && filename != "-a" {

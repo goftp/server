@@ -27,7 +27,7 @@ func (driver *MemDriver) Bytes(path string) (bytes int) {
 		bytes = len(fileTwo)
 		break
 	default:
-	    bytes = -1
+		bytes = -1
 	}
 	return
 }
