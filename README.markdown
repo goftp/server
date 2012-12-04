@@ -26,7 +26,7 @@ persistence layer - the required driver contract is listed below.
 There is a sample in-memory driver available as a demo. You can build it with
 this command:
 
-    go install github.com/yob/graval/examples
+    go install github.com/yob/graval/graval-mem
 
 Then run it:
 
