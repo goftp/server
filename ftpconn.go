@@ -119,6 +119,18 @@ func (ftpConn *FTPConn) cmdNoop() {
 	ftpConn.writeMessage(200, "OK")
 }
 
+// cmdPass respond to the PASS FTP command by asking the driver if the supplied
+// username and password are valid
+func (ftpConn *FTPConn) cmdPass(param string) {
+	if ftpConn.driver.Authenticate(ftpConn.reqUser, param) {
+		ftpConn.user = ftpConn.reqUser
+		ftpConn.reqUser = ""
+		ftpConn.writeMessage(230, "Password ok, continue")
+	} else {
+		ftpConn.writeMessage(530, "Incorrect password, not logged in")
+	}
+}
+
 // cmdStru responds to the STRU FTP command.
 //
 // like the MODE and TYPE commands, stru[cture] dates back to a time when the
@@ -136,27 +148,15 @@ func (ftpConn *FTPConn) cmdStru(param string) {
 	}
 }
 
+// cmdSyst responds to the SYST FTP command by providing a canned response.
+func (ftpConn *FTPConn) cmdSyst() {
+	ftpConn.writeMessage(215, "UNIX Type: L8")
+}
+
 // cmdUser responds to the USER FTP command by asking for the password
 func (ftpConn *FTPConn) cmdUser(param string) {
 	ftpConn.reqUser = param
 	ftpConn.writeMessage(331, "User name ok, password required")
-}
-
-// cmdPass respond to the PASS FTP command by asking the driver if the supplied
-// username and password are valid
-func (ftpConn *FTPConn) cmdPass(param string) {
-	if ftpConn.driver.Authenticate(ftpConn.reqUser, param) {
-		ftpConn.user = ftpConn.reqUser
-		ftpConn.reqUser = ""
-		ftpConn.writeMessage(230, "Password ok, continue")
-	} else {
-		ftpConn.writeMessage(530, "Incorrect password, not logged in")
-	}
-}
-
-// cmdSyst responds to the SYST FTP command by providing a canned response.
-func (ftpConn *FTPConn) cmdSyst() {
-	ftpConn.writeMessage(215, "UNIX Type: L8")
 }
 
 func (ftpConn *FTPConn) parseLine(line string) (string, string) {
