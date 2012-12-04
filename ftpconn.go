@@ -10,8 +10,6 @@ import (
 
 const (
 	welcomeMessage = "Welcome to the Go FTP Server"
-	USER           = "USER"
-	PASS           = "PASS"
 )
 
 type FTPConn struct {
@@ -71,23 +69,31 @@ func (ftpConn *FTPConn) Close() {
 // appropriate response.
 func (ftpConn *FTPConn) receiveLine(line string) {
 	log.Print(line)
-	command, params := ftpConn.parseLine(line)
+	command, param := ftpConn.parseLine(line)
 	switch command {
-	case USER:
-		ftpConn.reqUser = params
-		ftpConn.writeMessage(331, "User name ok, password required")
+	case "USER":
+		ftpConn.cmdUser(param)
 		break
-	case PASS:
-		if ftpConn.driver.Authenticate(ftpConn.reqUser, params) {
-			ftpConn.user = ftpConn.reqUser
-			ftpConn.reqUser = ""
-			ftpConn.writeMessage(230, "Password ok, continue")
-		} else {
-			ftpConn.writeMessage(530, "Incorrect password, not logged in")
-		}
+	case "PASS":
+		ftpConn.cmdPass(param)
 		break
 	default:
 		ftpConn.writeMessage(500, "Command not found")
+	}
+}
+
+func (ftpConn *FTPConn) cmdUser(param string) {
+	ftpConn.reqUser = param
+	ftpConn.writeMessage(331, "User name ok, password required")
+}
+
+func (ftpConn *FTPConn) cmdPass(param string) {
+	if ftpConn.driver.Authenticate(ftpConn.reqUser, param) {
+		ftpConn.user = ftpConn.reqUser
+		ftpConn.reqUser = ""
+		ftpConn.writeMessage(230, "Password ok, continue")
+	} else {
+		ftpConn.writeMessage(530, "Incorrect password, not logged in")
 	}
 }
 
