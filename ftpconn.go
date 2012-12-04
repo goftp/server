@@ -47,7 +47,7 @@ func NewFTPConn(tcpConn *net.TCPConn, driver FTPDriver) *FTPConn {
 func (ftpConn *FTPConn) Serve(terminated chan bool) {
 	log.Print("Connection Established")
 	// send welcome
-	ftpConn.writeMessage(getMessageFormat(220), welcomeMessage)
+	ftpConn.writeMessage(220, welcomeMessage)
 	// read commands
 	for {
 		line, err := ftpConn.controlReader.ReadString('\n')
@@ -78,51 +78,30 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		switch command {
 		case USER:
 			ftpConn.reqUser = params[1]
-			ftpConn.writeMessage(getMessageFormat(331), "User name ok, password required")
+			ftpConn.writeMessage(331, "User name ok, password required")
 			break
 		case PASS:
 			if ftpConn.driver.Authenticate(ftpConn.reqUser, params[1]) {
 				ftpConn.user = ftpConn.reqUser
 				ftpConn.reqUser = ""
-				ftpConn.writeMessage(getMessageFormat(230), "Password ok, continue")
+				ftpConn.writeMessage(230, "Password ok, continue")
 			} else {
-				ftpConn.writeMessage(getMessageFormat(530), "Incorrect password, not logged in")
+				ftpConn.writeMessage(530, "Incorrect password, not logged in")
 			}
 			break
 		default:
-			ftpConn.writeMessage(getMessageFormat(500), "Command not found")
+			ftpConn.writeMessage(500, "Command not found")
 		}
 	} else {
-		ftpConn.writeMessage(getMessageFormat(500), "Syntax error, zero parameters")
+		ftpConn.writeMessage(500, "Syntax error, zero parameters")
 	}
 }
 
 // writeMessage will send a standard FTP response back to the client.
-func (ftpConn *FTPConn) writeMessage(messageFormat string, v ...interface{}) (wrote int, err error) {
-	message := fmt.Sprintf(messageFormat, v...)
-	wrote, err = ftpConn.controlWriter.WriteString(message)
+func (ftpConn *FTPConn) writeMessage(code int, message string) (wrote int, err error) {
+	line := fmt.Sprintf("%d %s\r\n", code, message)
+	wrote, err = ftpConn.controlWriter.WriteString(line)
 	ftpConn.controlWriter.Flush()
 	log.Print(message)
-	return
-}
-
-func getMessageFormat(command int) (messageFormat string) {
-	switch command {
-	case 220:
-		messageFormat = "220 %s"
-		break
-	case 230:
-		messageFormat = "230 %s"
-		break
-	case 331:
-		messageFormat = "331 %s"
-		break
-	case 500:
-		messageFormat = "500 %s"
-		break
-	case 530:
-		messageFormat = "530 %s"
-		break
-	}
-	return messageFormat + "\r\n"
+	return wrote, nil
 }
