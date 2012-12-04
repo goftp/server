@@ -83,6 +83,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "DELE":
 		ftpConn.cmdDele(param)
 		break
+	case "MKD":
+		ftpConn.cmdMkd(param)
+		break
 	case "MODE":
 		ftpConn.cmdMode(param)
 		break
@@ -150,6 +153,17 @@ func (ftpConn *FTPConn) cmdDele(param string) {
 	path := ftpConn.buildPath(param)
 	if ftpConn.driver.DeleteFile(path) {
 		ftpConn.writeMessage(250, "File deleted")
+	} else {
+		ftpConn.writeMessage(550, "Action not taken")
+	}
+}
+
+// cmdMkd responds to the MKD FTP command. It allows the client to create
+// a new directory
+func (ftpConn *FTPConn) cmdMkd(param string) {
+	path := ftpConn.buildPath(param)
+	if ftpConn.driver.MakeDir(path) {
+		ftpConn.writeMessage(257, "Directory created")
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
 	}
