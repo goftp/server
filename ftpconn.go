@@ -98,6 +98,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "PASS":
 		ftpConn.cmdPass(param)
 		break
+	case "PWD", "XPWD":
+		ftpConn.cmdPwd()
+		break
 	case "QUIT":
 		ftpConn.Close()
 		break
@@ -211,6 +214,13 @@ func (ftpConn *FTPConn) cmdPass(param string) {
 	} else {
 		ftpConn.writeMessage(530, "Incorrect password, not logged in")
 	}
+}
+
+// cmdPwd responds to the PWD FTP command.
+//
+// Tells the client what the current working directory is.
+func (ftpConn *FTPConn) cmdPwd() {
+	ftpConn.writeMessage(257, "\"" + ftpConn.namePrefix + "\" is the current directory")
 }
 
 // cmdRmd responds to the RMD FTP command. It allows the client to delete a
