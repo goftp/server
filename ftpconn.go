@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -13,12 +15,12 @@ const (
 )
 
 type FTPConn struct {
-	cwd           string
 	conn          *net.TCPConn
 	controlReader *bufio.Reader
 	controlWriter *bufio.Writer
 	data          *net.TCPConn
 	driver        FTPDriver
+	namePrefix    string
 	reqUser       string
 	user          string
 }
@@ -29,7 +31,7 @@ type FTPConn struct {
 // will handle all auth and persistence details.
 func NewFTPConn(tcpConn *net.TCPConn, driver FTPDriver) *FTPConn {
 	c := new(FTPConn)
-	c.cwd = "/"
+	c.namePrefix = "/"
 	c.conn = tcpConn
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
@@ -85,6 +87,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		break
 	case "QUIT":
 		ftpConn.Close()
+		break
+	case "SIZE":
+		ftpConn.cmdSize(param)
 		break
 	case "STRU":
 		ftpConn.cmdStru(param)
@@ -142,6 +147,18 @@ func (ftpConn *FTPConn) cmdPass(param string) {
 		ftpConn.writeMessage(230, "Password ok, continue")
 	} else {
 		ftpConn.writeMessage(530, "Incorrect password, not logged in")
+	}
+}
+
+// cmdSize responds to the SIZE FTP command. It returns the size of the
+// requested path in bytes.
+func (ftpConn *FTPConn) cmdSize(param string) {
+	path  := ftpConn.buildPath(param)
+	bytes := ftpConn.driver.Bytes(path)
+	if bytes >= 0 {
+		ftpConn.writeMessage(213, strconv.Itoa(bytes))
+	} else {
+		ftpConn.writeMessage(450, "file not available")
 	}
 }
 
@@ -207,5 +224,34 @@ func (ftpConn *FTPConn) writeMessage(code int, message string) (wrote int, err e
 	log.Print(line)
 	wrote, err = ftpConn.controlWriter.WriteString(line)
 	ftpConn.controlWriter.Flush()
+	return
+}
+
+// buildPath takes a client supplied path or filename and generates a safe
+// absolute path withing their account sandbox.
+//
+//    buildpath("/")
+//    => "/"
+//    buildpath("one.txt")
+//    => "/one.txt"
+//    buildpath("/files/two.txt")
+//    => "/files/two.txt"
+//    buildpath("files/two.txt")
+//    => "files/two.txt"
+//    buildpath("/../../../../etc/passwd")
+//    => "/etc/passwd"
+//
+// The driver implementation is responsible for deciding how to treat this path.
+// Obviously they MUST NOT just read the path off disk. The probably want to
+// prefix the path with something to scope the users access to a sandbox.
+func (ftpConn *FTPConn) buildPath(filename string) (fullPath string){
+	if filename[0:1] == "/" {
+		fullPath = filepath.Clean(filename)
+	} else if filename != "" && filename != "-a" {
+		fullPath = filepath.Clean(ftpConn.namePrefix + "/" + filename)
+	} else {
+		fullPath = filepath.Clean(ftpConn.namePrefix)
+	}
+	fullPath = strings.Replace(fullPath, "//", "/", -1)
 	return
 }

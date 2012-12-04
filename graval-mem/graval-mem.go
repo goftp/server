@@ -8,13 +8,28 @@ import (
 	"time"
 )
 
+const (
+	fileOne = "This is the first file available for download.\n\nBy Jàmes"
+	fileTwo = "This is file number two.\n\n2012-12-04"
+)
+
 type MemDriver struct{}
 
 func (driver *MemDriver) Authenticate(user string, pass string) bool {
 	return user == "test" && pass == "1234"
 }
-func (driver *MemDriver) Bytes(path string) int {
-	return -1
+func (driver *MemDriver) Bytes(path string) (bytes int) {
+	switch path {
+	case "/one.txt":
+		bytes = len(fileOne)
+		break
+	case "/files/two.txt":
+		bytes = len(fileTwo)
+		break
+	default:
+	    bytes = -1
+	}
+	return
 }
 func (driver *MemDriver) ModifiedTime(path string) time.Time {
 	return time.Now()
