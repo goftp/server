@@ -91,6 +91,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "QUIT":
 		ftpConn.Close()
 		break
+	case "RMD":
+		ftpConn.cmdRmd(param)
+		break
 	case "SIZE":
 		ftpConn.cmdSize(param)
 		break
@@ -162,6 +165,17 @@ func (ftpConn *FTPConn) cmdPass(param string) {
 		ftpConn.writeMessage(230, "Password ok, continue")
 	} else {
 		ftpConn.writeMessage(530, "Incorrect password, not logged in")
+	}
+}
+
+// cmdRmd responds to the RMD FTP command. It allows the client to delete a
+// directory.
+func (ftpConn *FTPConn) cmdRmd(param string) {
+	path := ftpConn.buildPath(param)
+	if ftpConn.driver.DeleteDir(path) {
+		ftpConn.writeMessage(250, "Directory deleted")
+	} else {
+		ftpConn.writeMessage(550, "Action not taken")
 	}
 }
 
