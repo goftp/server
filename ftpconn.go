@@ -74,6 +74,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "MODE":
 		ftpConn.cmdMode(param)
 		break
+	case "NOOP":
+		ftpConn.cmdNoop()
+		break
 	case "PASS":
 		ftpConn.cmdPass(param)
 		break
@@ -103,6 +106,14 @@ func (ftpConn *FTPConn) cmdMode(param string) {
 	} else {
 		ftpConn.writeMessage(504, "MODE is an obsolete command")
 	}
+}
+
+// cmdNoop responds to the NOOP FTP command.
+//
+// This is essentially a ping from the client so we just respond with an
+// basic 200 message.
+func (ftpConn *FTPConn) cmdNoop() {
+	ftpConn.writeMessage(200, "OK")
 }
 
 // cmdUser responds to the USER FTP command by asking for the password
