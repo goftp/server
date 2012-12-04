@@ -71,6 +71,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	log.Print(line)
 	command, param := ftpConn.parseLine(line)
 	switch command {
+	case "ALLO":
+		ftpConn.cmdAllo()
+		break
 	case "MODE":
 		ftpConn.cmdMode(param)
 		break
@@ -95,6 +98,14 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	default:
 		ftpConn.writeMessage(500, "Command not found")
 	}
+}
+
+// cmdNoop responds to the ALLO FTP command.
+//
+// This is essentially a ping from the client so we just respond with an
+// basic OK message.
+func (ftpConn *FTPConn) cmdAllo() {
+	ftpConn.writeMessage(202, "Obsolete")
 }
 
 // cmdMode responds to the MODE FTP command.
