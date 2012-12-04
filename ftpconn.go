@@ -34,18 +34,11 @@ func NewFTPConn(tcpConn *net.TCPConn, driver FTPDriver) *FTPConn {
 	c.driver = driver
 	return c
 }
-func (ftpConn *FTPConn) WriteMessage(messageFormat string, v ...interface{}) (wrote int, err error) {
-	message := fmt.Sprintf(messageFormat, v...)
-	wrote, err = ftpConn.controlWriter.WriteString(message)
-	ftpConn.controlWriter.Flush()
-	log.Print(message)
-	return
-}
 
 func (ftpConn *FTPConn) Serve(terminated chan bool) {
 	log.Print("Connection Established")
 	// send welcome
-	ftpConn.WriteMessage(getMessageFormat(220), welcomeMessage)
+	ftpConn.writeMessage(getMessageFormat(220), welcomeMessage)
 	// read commands
 	for {
 		line, err := ftpConn.controlReader.ReadString('\n')
@@ -60,22 +53,22 @@ func (ftpConn *FTPConn) Serve(terminated chan bool) {
 			switch command {
 			case USER:
 				ftpConn.reqUser = params[1]
-				ftpConn.WriteMessage(getMessageFormat(331), "User name ok, password required")
+				ftpConn.writeMessage(getMessageFormat(331), "User name ok, password required")
 				break
 			case PASS:
 				if ftpConn.driver.Authenticate(ftpConn.reqUser, params[1]) {
 					ftpConn.user = ftpConn.reqUser
 					ftpConn.reqUser = ""
-					ftpConn.WriteMessage(getMessageFormat(230), "Password ok, continue")
+					ftpConn.writeMessage(getMessageFormat(230), "Password ok, continue")
 				} else {
-					ftpConn.WriteMessage(getMessageFormat(530), "Incorrect password, not logged in")
+					ftpConn.writeMessage(getMessageFormat(530), "Incorrect password, not logged in")
 				}
 				break
 			default:
-				ftpConn.WriteMessage(getMessageFormat(500), "Command not found")
+				ftpConn.writeMessage(getMessageFormat(500), "Command not found")
 			}
 		} else {
-			ftpConn.WriteMessage(getMessageFormat(500), "Syntax error, zero parameters")
+			ftpConn.writeMessage(getMessageFormat(500), "Syntax error, zero parameters")
 		}
 	}
 	terminated <- true
@@ -87,6 +80,14 @@ func (ftpConn *FTPConn) Close() {
 	if ftpConn.data != nil {
 		ftpConn.data.Close()
 	}
+}
+
+func (ftpConn *FTPConn) writeMessage(messageFormat string, v ...interface{}) (wrote int, err error) {
+	message := fmt.Sprintf(messageFormat, v...)
+	wrote, err = ftpConn.controlWriter.WriteString(message)
+	ftpConn.controlWriter.Flush()
+	log.Print(message)
+	return
 }
 
 func getMessageFormat(command int) (messageFormat string) {
