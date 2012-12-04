@@ -45,18 +45,18 @@ func NewFTPConn(tcpConn *net.TCPConn, driver FTPDriver) *FTPConn {
 // message when the connection closes. This loop will be running inside a
 // goroutine, so use this channel to be notified when the connection can be
 // cleaned up.
-func (ftpConn *FTPConn) Serve(terminated chan bool) {
+func (ftpConn *FTPConn) Serve() {
 	log.Print("Connection Established")
 	// send welcome
 	ftpConn.writeMessage(220, welcomeMessage)
 	// read commands
 	for {
 		line, err := ftpConn.controlReader.ReadString('\n')
-		if err == nil {
-			ftpConn.receiveLine(line)
+		if err != nil {
+			break
 		}
+		ftpConn.receiveLine(line)
 	}
-	terminated <- true
 	log.Print("Connection Terminated")
 }
 
