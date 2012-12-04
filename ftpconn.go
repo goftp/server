@@ -71,30 +71,32 @@ func (ftpConn *FTPConn) Close() {
 // appropriate response.
 func (ftpConn *FTPConn) receiveLine(line string) {
 	log.Print(line)
-	params := strings.Split(strings.Trim(line, "\r\n"), " ")
-	count := len(params)
-	if count > 0 {
-		command := params[0]
-		switch command {
-		case USER:
-			ftpConn.reqUser = params[1]
-			ftpConn.writeMessage(331, "User name ok, password required")
-			break
-		case PASS:
-			if ftpConn.driver.Authenticate(ftpConn.reqUser, params[1]) {
-				ftpConn.user = ftpConn.reqUser
-				ftpConn.reqUser = ""
-				ftpConn.writeMessage(230, "Password ok, continue")
-			} else {
-				ftpConn.writeMessage(530, "Incorrect password, not logged in")
-			}
-			break
-		default:
-			ftpConn.writeMessage(500, "Command not found")
+	command, params := ftpConn.parseLine(line)
+	switch command {
+	case USER:
+		ftpConn.reqUser = params
+		ftpConn.writeMessage(331, "User name ok, password required")
+		break
+	case PASS:
+		if ftpConn.driver.Authenticate(ftpConn.reqUser, params) {
+			ftpConn.user = ftpConn.reqUser
+			ftpConn.reqUser = ""
+			ftpConn.writeMessage(230, "Password ok, continue")
+		} else {
+			ftpConn.writeMessage(530, "Incorrect password, not logged in")
 		}
-	} else {
-		ftpConn.writeMessage(500, "Syntax error, zero parameters")
+		break
+	default:
+		ftpConn.writeMessage(500, "Command not found")
 	}
+}
+
+func (ftpConn *FTPConn) parseLine(line string) (string, string) {
+	params := strings.SplitN(strings.Trim(line, "\r\n"), " ", 2)
+	if len(params) == 1 {
+		return params[0], ""
+	}
+	return params[0], params[1]
 }
 
 // writeMessage will send a standard FTP response back to the client.
@@ -103,5 +105,5 @@ func (ftpConn *FTPConn) writeMessage(code int, message string) (wrote int, err e
 	wrote, err = ftpConn.controlWriter.WriteString(line)
 	ftpConn.controlWriter.Flush()
 	log.Print(message)
-	return wrote, nil
+	return
 }
