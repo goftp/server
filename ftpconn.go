@@ -42,33 +42,8 @@ func (ftpConn *FTPConn) Serve(terminated chan bool) {
 	// read commands
 	for {
 		line, err := ftpConn.controlReader.ReadString('\n')
-		if err != nil {
-			break
-		}
-		log.Print(line)
-		params := strings.Split(strings.Trim(line, "\r\n"), " ")
-		count := len(params)
-		if count > 0 {
-			command := params[0]
-			switch command {
-			case USER:
-				ftpConn.reqUser = params[1]
-				ftpConn.writeMessage(getMessageFormat(331), "User name ok, password required")
-				break
-			case PASS:
-				if ftpConn.driver.Authenticate(ftpConn.reqUser, params[1]) {
-					ftpConn.user = ftpConn.reqUser
-					ftpConn.reqUser = ""
-					ftpConn.writeMessage(getMessageFormat(230), "Password ok, continue")
-				} else {
-					ftpConn.writeMessage(getMessageFormat(530), "Incorrect password, not logged in")
-				}
-				break
-			default:
-				ftpConn.writeMessage(getMessageFormat(500), "Command not found")
-			}
-		} else {
-			ftpConn.writeMessage(getMessageFormat(500), "Syntax error, zero parameters")
+		if err == nil {
+			ftpConn.receiveLine(line)
 		}
 	}
 	terminated <- true
@@ -79,6 +54,34 @@ func (ftpConn *FTPConn) Close() {
 	ftpConn.conn.Close()
 	if ftpConn.data != nil {
 		ftpConn.data.Close()
+	}
+}
+
+func (ftpConn *FTPConn) receiveLine(line string) {
+	log.Print(line)
+	params := strings.Split(strings.Trim(line, "\r\n"), " ")
+	count := len(params)
+	if count > 0 {
+		command := params[0]
+		switch command {
+		case USER:
+			ftpConn.reqUser = params[1]
+			ftpConn.writeMessage(getMessageFormat(331), "User name ok, password required")
+			break
+		case PASS:
+			if ftpConn.driver.Authenticate(ftpConn.reqUser, params[1]) {
+				ftpConn.user = ftpConn.reqUser
+				ftpConn.reqUser = ""
+				ftpConn.writeMessage(getMessageFormat(230), "Password ok, continue")
+			} else {
+				ftpConn.writeMessage(getMessageFormat(530), "Incorrect password, not logged in")
+			}
+			break
+		default:
+			ftpConn.writeMessage(getMessageFormat(500), "Command not found")
+		}
+	} else {
+		ftpConn.writeMessage(getMessageFormat(500), "Syntax error, zero parameters")
 	}
 }
 
