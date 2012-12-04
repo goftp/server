@@ -77,6 +77,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "ALLO":
 		ftpConn.cmdAllo()
 		break
+	case "CDUP":
+		ftpConn.cmdCdup()
+		break
 	case "CWD":
 		ftpConn.cmdCwd(param)
 		break
@@ -133,6 +136,13 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 // basic OK message.
 func (ftpConn *FTPConn) cmdAllo() {
 	ftpConn.writeMessage(202, "Obsolete")
+}
+
+// cmdCdup responds to the CDUP FTP command.
+//
+// Allows the client change their current directory to the parent.
+func (ftpConn *FTPConn) cmdCdup() {
+	ftpConn.cmdCwd("..")
 }
 
 // cmdCwd responds to the CWD FTP command. It allows the client to change the
