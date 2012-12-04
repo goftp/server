@@ -23,31 +23,25 @@ There is a sample in-memory driver available on github:
 To boot an FTP server you will need to provide a driver that speaks to your
 persistence layer - the required driver contract is listed below.
 
-Once that's ready, boot a new server like so:
+There is a sample in-memory driver available as a demo. You can build it with
+this command:
 
-    package main
+    go install github.com/yob/graval/examples
 
-    import "github.com/yob/graval"
+Then run it:
 
-    type MemDriver struct {}
+    ./bin/graval-mem
 
-    .. implement MemDriver here ..
+And finally, connect to the server with any FTP client and the following
+details:
 
-    type MemDriverFactory struct {}
-
-    func (factory *MemDriverFactory) NewDriver() graval.FTPDriver {
-      return &MemDriver{}
-    }
-
-    func main() {
-      factory := &MemDriverFactory{}
-      ftpServer := graval.NewFTPServer("localhost", 3000, factory)
-      ftpServer.Listen()
-    }
+    host: 127.0.0.1
+    username: test
+    password: 1234
 
 ### The Driver Contract
 
-The driver MUST have the following methods.  Each method MUST accept the listed
+Your driver MUST have the following methods.  Each method MUST accept the listed
 parameters and return an appropriate value:
 
     authenticate(user, pass)
