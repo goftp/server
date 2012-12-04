@@ -76,6 +76,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "ALLO":
 		ftpConn.cmdAllo()
 		break
+	case "CWD":
+		ftpConn.cmdCwd(param)
+		break
 	case "MODE":
 		ftpConn.cmdMode(param)
 		break
@@ -114,6 +117,18 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 // basic OK message.
 func (ftpConn *FTPConn) cmdAllo() {
 	ftpConn.writeMessage(202, "Obsolete")
+}
+
+// cmdCwd responds to the CWD FTP command. It allows the client to change the
+// current working directory.
+func (ftpConn *FTPConn) cmdCwd(param string) {
+	path := ftpConn.buildPath(param)
+	if ftpConn.driver.ChangeDir(path) {
+		ftpConn.namePrefix = path
+		ftpConn.writeMessage(250, "Directory changed to " + path)
+	} else {
+		ftpConn.writeMessage(550, "Action not taken")
+	}
 }
 
 // cmdMode responds to the MODE FTP command.

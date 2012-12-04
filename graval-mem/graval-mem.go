@@ -35,7 +35,7 @@ func (driver *MemDriver) ModifiedTime(path string) time.Time {
 	return time.Now()
 }
 func (driver *MemDriver) ChangeDir(path string) bool {
-	return false
+	return path == "/" || path == "/files"
 }
 func (driver *MemDriver) DirContents(path string) bool {
 	return false
