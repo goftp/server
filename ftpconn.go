@@ -71,6 +71,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	log.Print(line)
 	command, param := ftpConn.parseLine(line)
 	switch command {
+	case "MODE":
+		ftpConn.cmdMode(param)
+		break
 	case "PASS":
 		ftpConn.cmdPass(param)
 		break
@@ -85,6 +88,20 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		break
 	default:
 		ftpConn.writeMessage(500, "Command not found")
+	}
+}
+
+// cmdMode responds to the MODE FTP command.
+//
+// the original FTP spec had various options for hosts to negotiate how data
+// would be sent over the data socket, In reality these days (S)tream mode
+// is all that is used for the mode - data is just streamed down the data
+// socket unchanged.
+func (ftpConn *FTPConn) cmdMode(param string) {
+	if param == "S" {
+		ftpConn.writeMessage(200, "OK")
+	} else {
+		ftpConn.writeMessage(504, "MODE is an obsolete command")
 	}
 }
 
