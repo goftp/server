@@ -80,6 +80,9 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	case "QUIT":
 		ftpConn.Close()
 		break
+	case "SYST":
+		ftpConn.cmdSyst()
+		break
 	default:
 		ftpConn.writeMessage(500, "Command not found")
 	}
@@ -101,6 +104,11 @@ func (ftpConn *FTPConn) cmdPass(param string) {
 	} else {
 		ftpConn.writeMessage(530, "Incorrect password, not logged in")
 	}
+}
+
+// cmdSyst responds to the SYST FTP command by providing a canned response.
+func (ftpConn *FTPConn) cmdSyst() {
+	ftpConn.writeMessage(215, "UNIX Type: L8")
 }
 
 func (ftpConn *FTPConn) parseLine(line string) (string, string) {
