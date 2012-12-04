@@ -23,6 +23,7 @@ type FTPConn struct {
 	namePrefix    string
 	reqUser       string
 	user          string
+	renameFrom    string
 }
 
 // NewFTPConn constructs a new object that will handle the FTP protocol over
@@ -96,6 +97,12 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		break
 	case "RMD":
 		ftpConn.cmdRmd(param)
+		break
+	case "RNFR":
+		ftpConn.cmdRnfr(param)
+		break
+	case "RNTO":
+		ftpConn.cmdRnto(param)
 		break
 	case "SIZE":
 		ftpConn.cmdSize(param)
@@ -188,6 +195,24 @@ func (ftpConn *FTPConn) cmdRmd(param string) {
 	path := ftpConn.buildPath(param)
 	if ftpConn.driver.DeleteDir(path) {
 		ftpConn.writeMessage(250, "Directory deleted")
+	} else {
+		ftpConn.writeMessage(550, "Action not taken")
+	}
+}
+
+// cmdRnfr responds to the RNFR FTP command. It's the first of two commands
+// required for a client to rename a file.
+func (ftpConn *FTPConn) cmdRnfr(param string) {
+	ftpConn.renameFrom = ftpConn.buildPath(param)
+	ftpConn.writeMessage(350, "Requested file action pending further information.")
+}
+
+// cmdRnto responds to the RNTO FTP command. It's the second of two commands
+// required for a client to rename a file.
+func (ftpConn *FTPConn) cmdRnto(param string) {
+	toPath := ftpConn.buildPath(param)
+	if ftpConn.driver.Rename(ftpConn.renameFrom, toPath) {
+		ftpConn.writeMessage(250, "File renamed")
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
 	}
