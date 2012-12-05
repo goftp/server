@@ -1,6 +1,7 @@
 package graval
 
 import (
+	"os"
 	"time"
 )
 
@@ -30,7 +31,7 @@ type FTPDriver interface {
 	// params  - path
 	// returns - a collection of items describing the contents of the requested
 	//           path
-	DirContents(string) bool
+	DirContents(string) []os.FileInfo
 
 	// params  - path
 	// returns - true if the directory was deleted

@@ -18,7 +18,7 @@ type FTPConn struct {
 	conn          *net.TCPConn
 	controlReader *bufio.Reader
 	controlWriter *bufio.Writer
-	data          *net.TCPConn
+	dataConn      *net.TCPConn
 	driver        FTPDriver
 	namePrefix    string
 	reqUser       string
@@ -63,8 +63,8 @@ func (ftpConn *FTPConn) Serve() {
 // Close will manually close this connection, even if the client isn't ready.
 func (ftpConn *FTPConn) Close() {
 	ftpConn.conn.Close()
-	if ftpConn.data != nil {
-		ftpConn.data.Close()
+	if ftpConn.dataConn != nil {
+		ftpConn.dataConn.Close()
 	}
 }
 
@@ -86,10 +86,14 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdMkd(param)
 	case "MODE":
 		ftpConn.cmdMode(param)
+	case "NLST":
+		ftpConn.cmdNlst(param)
 	case "NOOP":
 		ftpConn.cmdNoop()
 	case "PASS":
 		ftpConn.cmdPass(param)
+	case "PORT":
+		ftpConn.cmdPort(param)
 	case "PWD", "XPWD":
 		ftpConn.cmdPwd()
 	case "QUIT":
@@ -178,6 +182,16 @@ func (ftpConn *FTPConn) cmdMode(param string) {
 	}
 }
 
+// cmdList responds to the NLST FTP command. It allows the client to retreive
+// a list of filenames in the current directory.
+func (ftpConn *FTPConn) cmdNlst(param string) {
+	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
+	path  := ftpConn.buildPath(param)
+	files := ftpConn.driver.DirContents(path)
+	formatter := NewListFormatter(files)
+	ftpConn.sendOutofbandData(formatter.Short())
+}
+
 // cmdNoop responds to the NOOP FTP command.
 //
 // This is essentially a ping from the client so we just respond with an
@@ -195,6 +209,23 @@ func (ftpConn *FTPConn) cmdPass(param string) {
 		ftpConn.writeMessage(230, "Password ok, continue")
 	} else {
 		ftpConn.writeMessage(530, "Incorrect password, not logged in")
+	}
+}
+
+// cmdPort responds to the PORT FTP command.
+//
+// The client has opened a listening socket for sending out of band data and
+// is requesting that we connect to it
+func (ftpConn *FTPConn) cmdPort(param string) {
+	nums := strings.Split(param, ",")
+	portOne, _ := strconv.Atoi(nums[4])
+	portTwo, _ := strconv.Atoi(nums[5])
+	port := (portOne * 256) + portTwo
+	host := nums[0] + "." + nums[1] + "." + nums[2] + "." + nums[3]
+	if ftpConn.startActiveSocket(host, port) {
+		ftpConn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
+	} else {
+		ftpConn.writeMessage(425, "Data connection failed")
 	}
 }
 
@@ -329,9 +360,9 @@ func (ftpConn *FTPConn) writeMessage(code int, message string) (wrote int, err e
 // Obviously they MUST NOT just read the path off disk. The probably want to
 // prefix the path with something to scope the users access to a sandbox.
 func (ftpConn *FTPConn) buildPath(filename string) (fullPath string) {
-	if filename[0:1] == "/" {
+	if len(filename) > 0 && filename[0:1] == "/" {
 		fullPath = filepath.Clean(filename)
-	} else if filename != "" && filename != "-a" {
+	} else if len(filename) > 0 && filename != "-a" {
 		fullPath = filepath.Clean(ftpConn.namePrefix + "/" + filename)
 	} else {
 		fullPath = filepath.Clean(ftpConn.namePrefix)
@@ -339,3 +370,33 @@ func (ftpConn *FTPConn) buildPath(filename string) (fullPath string) {
 	fullPath = strings.Replace(fullPath, "//", "/", -1)
 	return
 }
+
+// sendOutofbandData will send a string to the client via the currently open
+// data socket. Assumes the socket is open and ready to be used.
+func (ftpConn *FTPConn) sendOutofbandData(data string) {
+	bytes := len(data)
+	ftpConn.dataConn.Write([]byte(data))
+	ftpConn.dataConn.Close()
+	message := "Closing data connection, sent "+strconv.Itoa(bytes)+" bytes"
+	ftpConn.writeMessage(226, message)
+}
+
+// startActiveSocket opens a new data connection to the client, ready for
+// out-of-band data to be shared
+func (ftpConn *FTPConn) startActiveSocket(host string, port int) bool {
+	connectTo := host+":"+strconv.Itoa(port)
+	log.Print("connecting to "+connectTo)
+	raddr, err := net.ResolveTCPAddr("tcp", connectTo)
+	if err != nil {
+		log.Print(err)
+		return false
+	}
+	tcpConn, err := net.DialTCP("tcp", nil, raddr)
+	if err != nil {
+		log.Print(err)
+		return false
+	}
+	ftpConn.dataConn   = tcpConn
+	return true
+}
+

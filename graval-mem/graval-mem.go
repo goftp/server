@@ -5,6 +5,7 @@ package main
 import (
 	"github.com/yob/graval"
 	"log"
+	"os"
 	"time"
 )
 
@@ -37,9 +38,18 @@ func (driver *MemDriver) ModifiedTime(path string) time.Time {
 func (driver *MemDriver) ChangeDir(path string) bool {
 	return path == "/" || path == "/files"
 }
-func (driver *MemDriver) DirContents(path string) bool {
-	return false
+func (driver *MemDriver) DirContents(path string) (files []os.FileInfo) {
+	files = []os.FileInfo{}
+	switch path {
+	case "/":
+		files = append(files, graval.NewDirItem("files"))
+		files = append(files, graval.NewFileItem("one.txt", len(fileOne)))
+	case "/files":
+		files = append(files, graval.NewFileItem("two.txt", len(fileOne)))
+	}
+	return files
 }
+
 func (driver *MemDriver) DeleteDir(path string) bool {
 	return false
 }
