@@ -186,7 +186,7 @@ func (ftpConn *FTPConn) cmdMode(param string) {
 // a list of filenames in the current directory.
 func (ftpConn *FTPConn) cmdNlst(param string) {
 	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
-	path  := ftpConn.buildPath(param)
+	path := ftpConn.buildPath(param)
 	files := ftpConn.driver.DirContents(path)
 	formatter := NewListFormatter(files)
 	ftpConn.sendOutofbandData(formatter.Short())
@@ -377,15 +377,15 @@ func (ftpConn *FTPConn) sendOutofbandData(data string) {
 	bytes := len(data)
 	ftpConn.dataConn.Write([]byte(data))
 	ftpConn.dataConn.Close()
-	message := "Closing data connection, sent "+strconv.Itoa(bytes)+" bytes"
+	message := "Closing data connection, sent " + strconv.Itoa(bytes) + " bytes"
 	ftpConn.writeMessage(226, message)
 }
 
 // startActiveSocket opens a new data connection to the client, ready for
 // out-of-band data to be shared
 func (ftpConn *FTPConn) startActiveSocket(host string, port int) bool {
-	connectTo := host+":"+strconv.Itoa(port)
-	log.Print("connecting to "+connectTo)
+	connectTo := host + ":" + strconv.Itoa(port)
+	log.Print("connecting to " + connectTo)
 	raddr, err := net.ResolveTCPAddr("tcp", connectTo)
 	if err != nil {
 		log.Print(err)
@@ -396,7 +396,6 @@ func (ftpConn *FTPConn) startActiveSocket(host string, port int) bool {
 		log.Print(err)
 		return false
 	}
-	ftpConn.dataConn   = tcpConn
+	ftpConn.dataConn = tcpConn
 	return true
 }
-
