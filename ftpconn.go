@@ -82,6 +82,8 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdCwd(param)
 	case "DELE":
 		ftpConn.cmdDele(param)
+	case "LIST":
+		ftpConn.cmdList(param)
 	case "MKD":
 		ftpConn.cmdMkd(param)
 	case "MODE":
@@ -157,6 +159,16 @@ func (ftpConn *FTPConn) cmdDele(param string) {
 	}
 }
 
+// cmdList responds to the LIST FTP command. It allows the client to retreive
+// a detailed listing of the contents of a directory.
+func (ftpConn *FTPConn) cmdList(param string) {
+	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
+	path := ftpConn.buildPath(param)
+	files := ftpConn.driver.DirContents(path)
+	formatter := NewListFormatter(files)
+	ftpConn.sendOutofbandData(formatter.Detailed())
+}
+
 // cmdMkd responds to the MKD FTP command. It allows the client to create
 // a new directory
 func (ftpConn *FTPConn) cmdMkd(param string) {
@@ -182,7 +194,7 @@ func (ftpConn *FTPConn) cmdMode(param string) {
 	}
 }
 
-// cmdList responds to the NLST FTP command. It allows the client to retreive
+// cmdNlst responds to the NLST FTP command. It allows the client to retreive
 // a list of filenames in the current directory.
 func (ftpConn *FTPConn) cmdNlst(param string) {
 	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
