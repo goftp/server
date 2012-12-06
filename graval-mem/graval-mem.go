@@ -4,6 +4,7 @@ package main
 
 import (
 	"github.com/yob/graval"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -71,7 +72,7 @@ func (driver *MemDriver) GetFile(path string) (data string, err error) {
 	}
 	return
 }
-func (driver *MemDriver) PutFile(destPath string, tmpPath string) int {
+func (driver *MemDriver) PutFile(destPath string, data io.Reader) int {
 	return -1
 }
 

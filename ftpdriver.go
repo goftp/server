@@ -1,6 +1,7 @@
 package graval
 
 import (
+	"io"
 	"os"
 	"time"
 )
@@ -53,8 +54,8 @@ type FTPDriver interface {
 	// returns - a string containing the file data to send to the client
 	GetFile(string) (string, error)
 
-	// params  - desination path, temp file path
+	// params  - desination path, an io.Reader containing the file data
 	// returns - the number of bytes saved to the desination path or -1 if
 	//           there was an issue
-	PutFile(string, string) int
+	PutFile(string, io.Reader) int
 }

@@ -3,6 +3,7 @@ package graval
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"path/filepath"
@@ -110,6 +111,8 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdRnto(param)
 	case "SIZE":
 		ftpConn.cmdSize(param)
+	case "STOR":
+		ftpConn.cmdStor(param)
 	case "STRU":
 		ftpConn.cmdStru(param)
 	case "SYST":
@@ -300,6 +303,30 @@ func (ftpConn *FTPConn) cmdSize(param string) {
 		ftpConn.writeMessage(213, strconv.Itoa(bytes))
 	} else {
 		ftpConn.writeMessage(450, "file not available")
+	}
+}
+
+// cmdStor responds to the STOR FTP command. It allows the user to upload a new
+// file.
+func (ftpConn *FTPConn) cmdStor(param string) {
+	targetPath := ftpConn.buildPath(param)
+	ftpConn.writeMessage(150, "Data transfer starting")
+	data, err := ioutil.ReadAll(ftpConn.dataConn)
+	if err != nil {
+		ftpConn.writeMessage(450, "error during transfer")
+		return
+	}
+	tmpFile, err := ioutil.TempFile("", "stor")
+	tmpFile.Write(data)
+	tmpFile.Seek(0,0)
+	bytes := ftpConn.driver.PutFile(targetPath, tmpFile)
+	tmpFile.Close()
+	//tmpFile.Delete()
+	if bytes >= 0 {
+		msg := "OK, received "+strconv.Itoa(bytes)+" bytes"
+		ftpConn.writeMessage(226, msg)
+	} else {
+		ftpConn.writeMessage(550, "Action not taken")
 	}
 }
 
