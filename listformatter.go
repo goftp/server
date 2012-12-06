@@ -1,8 +1,10 @@
 package graval
 
 import (
+	"github.com/jehiah/go-strftime"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type ListFormatter struct {
@@ -33,7 +35,8 @@ func (formatter *ListFormatter) Detailed() string {
 	for _, file := range formatter.files {
 		output += file.Mode().String()
 		output += " 1 owner group "
-		output += strconv.Itoa(int(file.Size()))
+		output += lpad(strconv.Itoa(int(file.Size())), 12)
+		output += " " + strftime.Format("%b %d %H:%M", file.ModTime())
 		output += " " + file.Name()
 		output += "\r\n"
 	}
@@ -41,3 +44,13 @@ func (formatter *ListFormatter) Detailed() string {
 	return output
 }
 
+func lpad(input string, length int) (result string) {
+	if len(input) < length {
+		result = strings.Repeat(" ", length-len(input))+input
+	} else if len(input) == length {
+		result = input
+	} else {
+		result = input[0:length]
+	}
+	return
+}
