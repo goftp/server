@@ -50,8 +50,8 @@ type FTPDriver interface {
 	MakeDir(string) bool
 
 	// params  - path
-	// returns - the file to send back to the current user
-	GetFile(string) int
+	// returns - a string containing the file data to send to the client
+	GetFile(string) (string, error)
 
 	// params  - desination path, temp file path
 	// returns - the number of bytes saved to the desination path or -1 if

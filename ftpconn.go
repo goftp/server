@@ -100,6 +100,8 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdPwd()
 	case "QUIT":
 		ftpConn.Close()
+	case "RETR":
+		ftpConn.cmdRetr(param)
 	case "RMD", "XRMD":
 		ftpConn.cmdRmd(param)
 	case "RNFR":
@@ -246,6 +248,18 @@ func (ftpConn *FTPConn) cmdPort(param string) {
 // Tells the client what the current working directory is.
 func (ftpConn *FTPConn) cmdPwd() {
 	ftpConn.writeMessage(257, "\""+ftpConn.namePrefix+"\" is the current directory")
+}
+
+func (ftpConn *FTPConn) cmdRetr(param string) {
+	path := ftpConn.buildPath(param)
+	data, err := ftpConn.driver.GetFile(path)
+	if err == nil {
+		bytes := strconv.Itoa(len(data))
+		ftpConn.writeMessage(150, "Data transfer starting "+bytes+" bytes")
+		ftpConn.sendOutofbandData(data)
+	} else {
+		ftpConn.writeMessage(551, "File not available")
+	}
 }
 
 // cmdRmd responds to the RMD FTP command. It allows the client to delete a

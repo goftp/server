@@ -62,8 +62,14 @@ func (driver *MemDriver) Rename(fromPath string, toPath string) bool {
 func (driver *MemDriver) MakeDir(path string) bool {
 	return false
 }
-func (driver *MemDriver) GetFile(path string) int {
-	return -1
+func (driver *MemDriver) GetFile(path string) (data string, err error) {
+	switch path {
+	case "/one.txt":
+		data = fileOne
+	case "/files/two.txt":
+		data = fileTwo
+	}
+	return
 }
 func (driver *MemDriver) PutFile(destPath string, tmpPath string) int {
 	return -1
