@@ -3,6 +3,7 @@ package graval
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -312,13 +313,12 @@ func (ftpConn *FTPConn) cmdSize(param string) {
 func (ftpConn *FTPConn) cmdStor(param string) {
 	targetPath := ftpConn.buildPath(param)
 	ftpConn.writeMessage(150, "Data transfer starting")
-	data, err := ioutil.ReadAll(ftpConn.dataConn)
+	tmpFile, err := ioutil.TempFile("", "stor")
 	if err != nil {
 		ftpConn.writeMessage(450, "error during transfer")
 		return
 	}
-	tmpFile, err := ioutil.TempFile("", "stor")
-	tmpFile.Write(data)
+	io.Copy(tmpFile, ftpConn.dataConn)
 	tmpFile.Seek(0,0)
 	bytes := ftpConn.driver.PutFile(targetPath, tmpFile)
 	tmpFile.Close()
