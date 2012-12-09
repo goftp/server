@@ -255,6 +255,8 @@ func (ftpConn *FTPConn) cmdPwd() {
 	ftpConn.writeMessage(257, "\""+ftpConn.namePrefix+"\" is the current directory")
 }
 
+// cmdRetr responds to the RETR FTP command. It allows the client to download a
+// file.
 func (ftpConn *FTPConn) cmdRetr(param string) {
 	path := ftpConn.buildPath(param)
 	data, err := ftpConn.driver.GetFile(path)
