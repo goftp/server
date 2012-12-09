@@ -55,7 +55,6 @@ type FTPDriver interface {
 	GetFile(string) (string, error)
 
 	// params  - desination path, an io.Reader containing the file data
-	// returns - the number of bytes saved to the desination path or -1 if
-	//           there was an issue
-	PutFile(string, io.Reader) int
+	// returns - true if the data was successfully persisted
+	PutFile(string, io.Reader) bool
 }

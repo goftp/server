@@ -72,8 +72,8 @@ func (driver *MemDriver) GetFile(path string) (data string, err error) {
 	}
 	return
 }
-func (driver *MemDriver) PutFile(destPath string, data io.Reader) int {
-	return -1
+func (driver *MemDriver) PutFile(destPath string, data io.Reader) bool {
+	return false
 }
 
 type MemDriverFactory struct{}

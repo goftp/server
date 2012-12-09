@@ -318,13 +318,17 @@ func (ftpConn *FTPConn) cmdStor(param string) {
 		ftpConn.writeMessage(450, "error during transfer")
 		return
 	}
-	io.Copy(tmpFile, ftpConn.dataConn)
+	bytes, err := io.Copy(tmpFile, ftpConn.dataConn)
+	if err != nil {
+		ftpConn.writeMessage(450, "error during transfer")
+		return
+	}
 	tmpFile.Seek(0,0)
-	bytes := ftpConn.driver.PutFile(targetPath, tmpFile)
+	uploadSuccess := ftpConn.driver.PutFile(targetPath, tmpFile)
 	tmpFile.Close()
 	os.Remove(tmpFile.Name())
-	if bytes >= 0 {
-		msg := "OK, received "+strconv.Itoa(bytes)+" bytes"
+	if uploadSuccess {
+		msg := "OK, received "+strconv.Itoa(int(bytes))+" bytes"
 		ftpConn.writeMessage(226, msg)
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
