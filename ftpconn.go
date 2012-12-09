@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -321,7 +322,7 @@ func (ftpConn *FTPConn) cmdStor(param string) {
 	tmpFile.Seek(0,0)
 	bytes := ftpConn.driver.PutFile(targetPath, tmpFile)
 	tmpFile.Close()
-	//tmpFile.Delete()
+	os.Remove(tmpFile.Name())
 	if bytes >= 0 {
 		msg := "OK, received "+strconv.Itoa(bytes)+" bytes"
 		ftpConn.writeMessage(226, msg)
