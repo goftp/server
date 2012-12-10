@@ -21,7 +21,7 @@ type FTPConn struct {
 	conn          *net.TCPConn
 	controlReader *bufio.Reader
 	controlWriter *bufio.Writer
-	dataConn      *net.TCPConn
+	dataConn      FTPDataSocket
 	driver        FTPDriver
 	namePrefix    string
 	reqUser       string
@@ -97,6 +97,8 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdNoop()
 	case "PASS":
 		ftpConn.cmdPass(param)
+	case "PASV":
+		ftpConn.cmdPasv(param)
 	case "PORT":
 		ftpConn.cmdPort(param)
 	case "PWD", "XPWD":
@@ -231,6 +233,26 @@ func (ftpConn *FTPConn) cmdPass(param string) {
 	}
 }
 
+// cmdPasv responds to the PASV FTP command.
+//
+// The client is requesting us to open a new TCP listing socket and wait for them
+// to connect to it.
+func (ftpConn *FTPConn) cmdPasv(param string) {
+	socket, err := NewPassiveSocket()
+	if err != nil {
+		ftpConn.writeMessage(425, "Data connection failed")
+		return
+	}
+	ftpConn.dataConn = socket
+	p1 := socket.Port() / 256
+	p2 := socket.Port() - (p1 * 256)
+
+	quads := strings.Split(socket.Host(), ".")
+	target := fmt.Sprintf("(%s,%s,%s,%s,%d,%d)", quads[0], quads[1], quads[2], quads[3], p1, p2)
+	msg := "Entering Passive Mode "+target
+	ftpConn.writeMessage(227, msg)
+}
+
 // cmdPort responds to the PORT FTP command.
 //
 // The client has opened a listening socket for sending out of band data and
@@ -241,11 +263,13 @@ func (ftpConn *FTPConn) cmdPort(param string) {
 	portTwo, _ := strconv.Atoi(nums[5])
 	port := (portOne * 256) + portTwo
 	host := nums[0] + "." + nums[1] + "." + nums[2] + "." + nums[3]
-	if ftpConn.startActiveSocket(host, port) {
-		ftpConn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
-	} else {
+	socket, err := NewActiveSocket(host, port)
+	if err != nil {
 		ftpConn.writeMessage(425, "Data connection failed")
+		return
 	}
+	ftpConn.dataConn = socket
+	ftpConn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
 }
 
 // cmdPwd responds to the PWD FTP command.
@@ -439,23 +463,4 @@ func (ftpConn *FTPConn) sendOutofbandData(data string) {
 	ftpConn.dataConn.Close()
 	message := "Closing data connection, sent " + strconv.Itoa(bytes) + " bytes"
 	ftpConn.writeMessage(226, message)
-}
-
-// startActiveSocket opens a new data connection to the client, ready for
-// out-of-band data to be shared
-func (ftpConn *FTPConn) startActiveSocket(host string, port int) bool {
-	connectTo := host + ":" + strconv.Itoa(port)
-	log.Print("connecting to " + connectTo)
-	raddr, err := net.ResolveTCPAddr("tcp", connectTo)
-	if err != nil {
-		log.Print(err)
-		return false
-	}
-	tcpConn, err := net.DialTCP("tcp", nil, raddr)
-	if err != nil {
-		log.Print(err)
-		return false
-	}
-	ftpConn.dataConn = tcpConn
-	return true
 }
