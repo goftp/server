@@ -85,6 +85,8 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdCwd(param)
 	case "DELE":
 		ftpConn.cmdDele(param)
+	case "EPSV":
+		ftpConn.cmdEpsv(param)
 	case "LIST":
 		ftpConn.cmdList(param)
 	case "MKD":
@@ -166,6 +168,20 @@ func (ftpConn *FTPConn) cmdDele(param string) {
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
 	}
+}
+
+// cmdEpsv responds to the EPSV FTP command. It allows the client to request a
+// passive data socket with more options than the original PASV command. It
+// mainly adds ipv6 support, although we don't support that yet.
+func (ftpConn *FTPConn) cmdPasv(param string) {
+	socket, err := NewPassiveSocket()
+	if err != nil {
+		ftpConn.writeMessage(425, "Data connection failed")
+		return
+	}
+	ftpConn.dataConn = socket
+	msg := fmt.Sprintf("Entering Extended Passive Mode (|||%d|)", socket.Port())
+	ftpConn.writeMessage(229, msg)
 }
 
 // cmdList responds to the LIST FTP command. It allows the client to retreive
