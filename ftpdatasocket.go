@@ -33,7 +33,7 @@ type FTPActiveSocket struct {
 }
 
 func NewActiveSocket(host string, port int) (FTPDataSocket, error) {
-	connectTo := host + ":" + strconv.Itoa(port)
+	connectTo := buildTcpString(host, port)
 	log.Print("Opening active data connection to " + connectTo)
 	raddr, err := net.ResolveTCPAddr("tcp", connectTo)
 	if err != nil {
@@ -122,12 +122,12 @@ func (socket *FTPPassiveSocket) Close() error {
 }
 
 func (socket *FTPPassiveSocket) ListenAndServe() {
-	laddr, err := net.ResolveTCPAddr("tcp4", "127.0.0.1:0")
+	laddr, err := net.ResolveTCPAddr("tcp", socket.Host()+":0")
 	if err != nil {
 		log.Print(err)
 		return
 	}
-	listener, err := net.ListenTCP("tcp4", laddr)
+	listener, err := net.ListenTCP("tcp", laddr)
 	if err != nil {
 		log.Print(err)
 		return

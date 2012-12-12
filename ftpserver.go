@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 )
 
 type FTPServer struct {
@@ -14,18 +15,18 @@ type FTPServer struct {
 
 func NewFTPServer(hostname string, port int, factory FTPDriverFactory) *FTPServer {
 	s := new(FTPServer)
-	s.listenTo = hostname + ":" + strconv.Itoa(port)
+	s.listenTo = buildTcpString(hostname, port)
 	s.name = "Go FTP Server"
 	s.driverFactory = factory
 	return s
 }
 
 func (ftpServer *FTPServer) Listen() (err error) {
-	laddr, err := net.ResolveTCPAddr("tcp4", ftpServer.listenTo)
+	laddr, err := net.ResolveTCPAddr("tcp", ftpServer.listenTo)
 	if err != nil {
 		log.Fatal(err)
 	}
-	listener, err := net.ListenTCP("tcp4", laddr)
+	listener, err := net.ListenTCP("tcp", laddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,6 +44,25 @@ func (ftpServer *FTPServer) Accept(listener *net.TCPListener) (ftpConn *FTPConn,
 	tcpConn, err := listener.AcceptTCP()
 	if err == nil {
 		ftpConn = NewFTPConn(tcpConn, ftpServer.driverFactory.NewDriver())
+	}
+	return
+}
+
+func buildTcpString(hostname string, port int) (result string) {
+	if strings.Contains(hostname, ":") {
+		// ipv6
+		if port == 0 {
+			result = "["+hostname+"]"
+		} else {
+			result = "["+hostname +"]:" + strconv.Itoa(port)
+		}
+	} else {
+		// ipv4
+		if port == 0 {
+			result = hostname
+		} else {
+			result = hostname +":" + strconv.Itoa(port)
+		}
 	}
 	return
 }
