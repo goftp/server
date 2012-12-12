@@ -84,6 +84,6 @@ func (factory *MemDriverFactory) NewDriver() graval.FTPDriver {
 
 func main() {
 	factory := &MemDriverFactory{}
-	ftpServer := graval.NewFTPServer("localhost", 3000, factory)
+	ftpServer := graval.NewFTPServer("::", 3000, factory)
 	log.Fatal(ftpServer.Listen())
 }
