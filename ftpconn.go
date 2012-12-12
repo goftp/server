@@ -85,6 +85,8 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdCwd(param)
 	case "DELE":
 		ftpConn.cmdDele(param)
+	case "EPRT":
+		ftpConn.cmdEprt(param)
 	case "EPSV":
 		ftpConn.cmdEpsv(param)
 	case "LIST":
@@ -170,10 +172,32 @@ func (ftpConn *FTPConn) cmdDele(param string) {
 	}
 }
 
+// cmdEprt responds to the EPRT FTP command. It allows the client to request an
+// active data socket with more options than the original PORT command. It
+// mainly adds ipv6 support, although we don't support that yet.
+func (ftpConn *FTPConn) cmdEprt(param string) {
+	delim := string(param[0:1])
+	parts := strings.Split(param, delim)
+	addressFamily, err := strconv.Atoi(parts[1])
+	host := parts[2]
+	port, err := strconv.Atoi(parts[3])
+	if addressFamily != 1 && addressFamily != 2 {
+		ftpConn.writeMessage(522, "Network protocol not supported, use (1,2)")
+		return
+	}
+	socket, err := NewActiveSocket(host, port)
+	if err != nil {
+		ftpConn.writeMessage(425, "Data connection failed")
+		return
+	}
+	ftpConn.dataConn = socket
+	ftpConn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
+}
+
 // cmdEpsv responds to the EPSV FTP command. It allows the client to request a
 // passive data socket with more options than the original PASV command. It
 // mainly adds ipv6 support, although we don't support that yet.
-func (ftpConn *FTPConn) cmdPasv(param string) {
+func (ftpConn *FTPConn) cmdEpsv(param string) {
 	socket, err := NewPassiveSocket()
 	if err != nil {
 		ftpConn.writeMessage(425, "Data connection failed")
