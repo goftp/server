@@ -21,7 +21,7 @@ type ftpConn struct {
 	conn          *net.TCPConn
 	controlReader *bufio.Reader
 	controlWriter *bufio.Writer
-	dataConn      FTPDataSocket
+	dataConn      ftpDataSocket
 	driver        FTPDriver
 	namePrefix    string
 	reqUser       string
@@ -134,7 +134,7 @@ func (ftpConn *ftpConn) cmdEprt(param string) {
 		ftpConn.writeMessage(522, "Network protocol not supported, use (1,2)")
 		return
 	}
-	socket, err := NewActiveSocket(host, port)
+	socket, err := newActiveSocket(host, port)
 	if err != nil {
 		ftpConn.writeMessage(425, "Data connection failed")
 		return
@@ -147,7 +147,7 @@ func (ftpConn *ftpConn) cmdEprt(param string) {
 // passive data socket with more options than the original PASV command. It
 // mainly adds ipv6 support, although we don't support that yet.
 func (ftpConn *ftpConn) cmdEpsv(param string) {
-	socket, err := NewPassiveSocket()
+	socket, err := newPassiveSocket()
 	if err != nil {
 		ftpConn.writeMessage(425, "Data connection failed")
 		return
@@ -205,7 +205,7 @@ func (ftpConn *ftpConn) cmdPass(param string) {
 // The client is requesting us to open a new TCP listing socket and wait for them
 // to connect to it.
 func (ftpConn *ftpConn) cmdPasv(param string) {
-	socket, err := NewPassiveSocket()
+	socket, err := newPassiveSocket()
 	if err != nil {
 		ftpConn.writeMessage(425, "Data connection failed")
 		return
@@ -230,7 +230,7 @@ func (ftpConn *ftpConn) cmdPort(param string) {
 	portTwo, _ := strconv.Atoi(nums[5])
 	port := (portOne * 256) + portTwo
 	host := nums[0] + "." + nums[1] + "." + nums[2] + "." + nums[3]
-	socket, err := NewActiveSocket(host, port)
+	socket, err := newActiveSocket(host, port)
 	if err != nil {
 		ftpConn.writeMessage(425, "Data connection failed")
 		return

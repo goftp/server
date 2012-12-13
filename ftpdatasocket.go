@@ -11,7 +11,7 @@ import (
 
 // A data socket is used to send non-control data between the client and
 // server.
-type FTPDataSocket interface {
+type ftpDataSocket interface {
 	Host() string
 
 	Port() int
@@ -26,13 +26,13 @@ type FTPDataSocket interface {
 	Close() error
 }
 
-type FTPActiveSocket struct {
+type ftpActiveSocket struct {
 	conn *net.TCPConn
 	host string
 	port int
 }
 
-func NewActiveSocket(host string, port int) (FTPDataSocket, error) {
+func newActiveSocket(host string, port int) (ftpDataSocket, error) {
 	connectTo := buildTcpString(host, port)
 	log.Print("Opening active data connection to " + connectTo)
 	raddr, err := net.ResolveTCPAddr("tcp", connectTo)
@@ -45,43 +45,43 @@ func NewActiveSocket(host string, port int) (FTPDataSocket, error) {
 		log.Print(err)
 		return nil, err
 	}
-	socket := new(FTPActiveSocket)
+	socket := new(ftpActiveSocket)
 	socket.conn = tcpConn
 	socket.host = host
 	socket.port = port
 	return socket, nil
 }
 
-func (socket *FTPActiveSocket) Host() string {
+func (socket *ftpActiveSocket) Host() string {
 	return socket.host
 }
 
-func (socket *FTPActiveSocket) Port() int {
+func (socket *ftpActiveSocket) Port() int {
 	return socket.port
 }
 
-func (socket *FTPActiveSocket) Read(p []byte) (n int, err error) {
+func (socket *ftpActiveSocket) Read(p []byte) (n int, err error) {
 	return socket.conn.Read(p)
 }
 
-func (socket *FTPActiveSocket) Write(p []byte) (n int, err error) {
+func (socket *ftpActiveSocket) Write(p []byte) (n int, err error) {
 	return socket.conn.Write(p)
 }
 
-func (socket *FTPActiveSocket) Close() error {
+func (socket *ftpActiveSocket) Close() error {
 	return socket.conn.Close()
 }
 
 
-type FTPPassiveSocket struct {
+type ftpPassiveSocket struct {
 	conn     *net.TCPConn
 	port     int
 	ingress  chan []byte
 	egress   chan []byte
 }
 
-func NewPassiveSocket() (FTPDataSocket, error) {
-	socket := new(FTPPassiveSocket)
+func newPassiveSocket() (ftpDataSocket, error) {
+	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
 	go socket.ListenAndServe()
@@ -94,34 +94,34 @@ func NewPassiveSocket() (FTPDataSocket, error) {
 	return socket, nil
 }
 
-func (socket *FTPPassiveSocket) Host() string {
+func (socket *ftpPassiveSocket) Host() string {
 	return "127.0.0.1"
 }
 
-func (socket *FTPPassiveSocket) Port() int {
+func (socket *ftpPassiveSocket) Port() int {
 	return socket.port
 }
 
-func (socket *FTPPassiveSocket) Read(p []byte) (n int, err error) {
+func (socket *ftpPassiveSocket) Read(p []byte) (n int, err error) {
 	if socket.waitForOpenSocket() == false {
 		return 0, errors.New("data socket unavailable")
 	}
 	return socket.conn.Read(p)
 }
 
-func (socket *FTPPassiveSocket) Write(p []byte) (n int, err error) {
+func (socket *ftpPassiveSocket) Write(p []byte) (n int, err error) {
 	if socket.waitForOpenSocket() == false {
 		return 0, errors.New("data socket unavailable")
 	}
 	return socket.conn.Write(p)
 }
 
-func (socket *FTPPassiveSocket) Close() error {
+func (socket *ftpPassiveSocket) Close() error {
 	log.Print("closing passive data socket")
 	return socket.conn.Close()
 }
 
-func (socket *FTPPassiveSocket) ListenAndServe() {
+func (socket *ftpPassiveSocket) ListenAndServe() {
 	laddr, err := net.ResolveTCPAddr("tcp", socket.Host()+":0")
 	if err != nil {
 		log.Print(err)
@@ -146,7 +146,7 @@ func (socket *FTPPassiveSocket) ListenAndServe() {
 	socket.conn = tcpConn
 }
 
-func (socket *FTPPassiveSocket) waitForOpenSocket() bool {
+func (socket *ftpPassiveSocket) waitForOpenSocket() bool {
 	retries := 0
 	for {
 		if socket.conn != nil {
