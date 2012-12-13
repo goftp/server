@@ -19,10 +19,13 @@ var (
 		"CWD":  commandCwd{},
 		"DELE": commandDele{},
 		"MODE": commandMode{},
+		"NOOP": commandNoop{},
+		"RMD":  commandRmd{},
 		"SYST": commandSyst{},
 		"TYPE": commandType{},
 		"XCUP": commandCdup{},
 		"XCWD": commandCwd{},
+		"XRMD": commandRmd{},
 	}
 )
 
@@ -126,6 +129,45 @@ func (cmd commandMode) Execute(conn *FTPConn, param string) {
 		conn.writeMessage(200, "OK")
 	} else {
 		conn.writeMessage(504, "MODE is an obsolete command")
+	}
+}
+
+// cmdNoop responds to the NOOP FTP command.
+//
+// This is essentially a ping from the client so we just respond with an
+// basic 200 message.
+type commandNoop struct{}
+
+func (cmd commandNoop) RequireParam() bool {
+	return false
+}
+
+func (cmd commandNoop) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandNoop) Execute(conn *FTPConn, param string) {
+	conn.writeMessage(200, "OK")
+}
+
+// cmdRmd responds to the RMD FTP command. It allows the client to delete a
+// directory.
+type commandRmd struct{}
+
+func (cmd commandRmd) RequireParam() bool {
+	return false
+}
+
+func (cmd commandRmd) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandRmd) Execute(conn *FTPConn, param string) {
+	path := conn.buildPath(param)
+	if conn.driver.DeleteDir(path) {
+		conn.writeMessage(250, "Directory deleted")
+	} else {
+		conn.writeMessage(550, "Action not taken")
 	}
 }
 

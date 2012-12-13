@@ -92,8 +92,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdMkd(param)
 	case "NLST":
 		ftpConn.cmdNlst(param)
-	case "NOOP":
-		ftpConn.cmdNoop()
 	case "PASS":
 		ftpConn.cmdPass(param)
 	case "PASV":
@@ -106,8 +104,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.Close()
 	case "RETR":
 		ftpConn.cmdRetr(param)
-	case "RMD", "XRMD":
-		ftpConn.cmdRmd(param)
 	case "RNFR":
 		ftpConn.cmdRnfr(param)
 	case "RNTO":
@@ -192,14 +188,6 @@ func (ftpConn *FTPConn) cmdNlst(param string) {
 	ftpConn.sendOutofbandData(formatter.Short())
 }
 
-// cmdNoop responds to the NOOP FTP command.
-//
-// This is essentially a ping from the client so we just respond with an
-// basic 200 message.
-func (ftpConn *FTPConn) cmdNoop() {
-	ftpConn.writeMessage(200, "OK")
-}
-
 // cmdPass respond to the PASS FTP command by asking the driver if the supplied
 // username and password are valid
 func (ftpConn *FTPConn) cmdPass(param string) {
@@ -269,17 +257,6 @@ func (ftpConn *FTPConn) cmdRetr(param string) {
 		ftpConn.sendOutofbandData(data)
 	} else {
 		ftpConn.writeMessage(551, "File not available")
-	}
-}
-
-// cmdRmd responds to the RMD FTP command. It allows the client to delete a
-// directory.
-func (ftpConn *FTPConn) cmdRmd(param string) {
-	path := ftpConn.buildPath(param)
-	if ftpConn.driver.DeleteDir(path) {
-		ftpConn.writeMessage(250, "Directory deleted")
-	} else {
-		ftpConn.writeMessage(550, "Action not taken")
 	}
 }
 
