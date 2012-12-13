@@ -76,9 +76,12 @@ func (ftpConn *FTPConn) Close() {
 func (ftpConn *FTPConn) receiveLine(line string) {
 	log.Print(line)
 	command, param := ftpConn.parseLine(line)
+	cmdObj := commands[command]
+	if cmdObj != nil {
+		cmdObj.Execute(ftpConn, param)
+		return
+	}
 	switch command {
-	case "ALLO":
-		ftpConn.cmdAllo()
 	case "CDUP", "XCUP":
 		ftpConn.cmdCdup()
 	case "CWD", "XCWD":
@@ -132,14 +135,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 	default:
 		ftpConn.writeMessage(500, "Command not found")
 	}
-}
-
-// cmdNoop responds to the ALLO FTP command.
-//
-// This is essentially a ping from the client so we just respond with an
-// basic OK message.
-func (ftpConn *FTPConn) cmdAllo() {
-	ftpConn.writeMessage(202, "Obsolete")
 }
 
 // cmdCdup responds to the CDUP FTP command.
