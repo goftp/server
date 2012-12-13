@@ -82,8 +82,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		return
 	}
 	switch command {
-	case "DELE":
-		ftpConn.cmdDele(param)
 	case "EPRT":
 		ftpConn.cmdEprt(param)
 	case "EPSV":
@@ -92,8 +90,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdList(param)
 	case "MKD":
 		ftpConn.cmdMkd(param)
-	case "MODE":
-		ftpConn.cmdMode(param)
 	case "NLST":
 		ftpConn.cmdNlst(param)
 	case "NOOP":
@@ -126,17 +122,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdUser(param)
 	default:
 		ftpConn.writeMessage(500, "Command not found")
-	}
-}
-
-// cmdDele responds to the DELE FTP command. It allows the client to delete
-// a file
-func (ftpConn *FTPConn) cmdDele(param string) {
-	path := ftpConn.buildPath(param)
-	if ftpConn.driver.DeleteFile(path) {
-		ftpConn.writeMessage(250, "File deleted")
-	} else {
-		ftpConn.writeMessage(550, "Action not taken")
 	}
 }
 
@@ -194,20 +179,6 @@ func (ftpConn *FTPConn) cmdMkd(param string) {
 		ftpConn.writeMessage(257, "Directory created")
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
-	}
-}
-
-// cmdMode responds to the MODE FTP command.
-//
-// the original FTP spec had various options for hosts to negotiate how data
-// would be sent over the data socket, In reality these days (S)tream mode
-// is all that is used for the mode - data is just streamed down the data
-// socket unchanged.
-func (ftpConn *FTPConn) cmdMode(param string) {
-	if strings.ToUpper(param) == "S" {
-		ftpConn.writeMessage(200, "OK")
-	} else {
-		ftpConn.writeMessage(504, "MODE is an obsolete command")
 	}
 }
 

@@ -17,6 +17,8 @@ var (
 		"ALLO": commandAllo{},
 		"CDUP": commandCdup{},
 		"CWD":  commandCwd{},
+		"DELE": commandDele{},
+		"MODE": commandMode{},
 		"SYST": commandSyst{},
 		"TYPE": commandType{},
 		"XCUP": commandCdup{},
@@ -79,6 +81,51 @@ func (cmd commandCwd) Execute(conn *FTPConn, param string) {
 		conn.writeMessage(250, "Directory changed to "+path)
 	} else {
 		conn.writeMessage(550, "Action not taken")
+	}
+}
+
+// commandDele responds to the DELE FTP command. It allows the client to delete
+// a file
+type commandDele struct{}
+
+func (cmd commandDele) RequireParam() bool {
+	return false
+}
+
+func (cmd commandDele) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandDele) Execute(conn *FTPConn, param string) {
+	path := conn.buildPath(param)
+	if conn.driver.DeleteFile(path) {
+		conn.writeMessage(250, "File deleted")
+	} else {
+		conn.writeMessage(550, "Action not taken")
+	}
+}
+
+// cmdMode responds to the MODE FTP command.
+//
+// the original FTP spec had various options for hosts to negotiate how data
+// would be sent over the data socket, In reality these days (S)tream mode
+// is all that is used for the mode - data is just streamed down the data
+// socket unchanged.
+type commandMode struct{}
+
+func (cmd commandMode) RequireParam() bool {
+	return false
+}
+
+func (cmd commandMode) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandMode) Execute(conn *FTPConn, param string) {
+	if strings.ToUpper(param) == "S" {
+		conn.writeMessage(200, "OK")
+	} else {
+		conn.writeMessage(504, "MODE is an obsolete command")
 	}
 }
 
