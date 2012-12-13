@@ -4,52 +4,52 @@ import (
 	"strings"
 )
 
-type FTPCommand interface {
+type ftpCommand interface {
 	RequireParam() bool
 	RequireAuth() bool
 	Execute(*FTPConn, string)
 }
 
-type commandMap map[string]FTPCommand
+type commandMap map[string]ftpCommand
 
 var (
 	commands = commandMap{
-		"ALLO": CommandAllo{},
-		"SYST": CommandSyst{},
-		"TYPE": CommandType{},
+		"ALLO": commandAllo{},
+		"SYST": commandSyst{},
+		"TYPE": commandType{},
 	}
 )
 
-// CommandAllo responds to the ALLO FTP command.
+// commandAllo responds to the ALLO FTP command.
 //
 // This is essentially a ping from the client so we just respond with an
 // basic OK message.
-type CommandAllo struct{}
+type commandAllo struct{}
 
-func (cmd CommandAllo) RequireParam() bool {
+func (cmd commandAllo) RequireParam() bool {
 	return false
 }
 
-func (cmd CommandAllo) RequireAuth() bool {
+func (cmd commandAllo) RequireAuth() bool {
 	return false
 }
 
-func (cmd CommandAllo) Execute(conn *FTPConn, param string) {
+func (cmd commandAllo) Execute(conn *FTPConn, param string) {
 	conn.writeMessage(202, "Obsolete")
 }
 
-// CommandSyst responds to the SYST FTP command by providing a canned response.
-type CommandSyst struct{}
+// commandSyst responds to the SYST FTP command by providing a canned response.
+type commandSyst struct{}
 
-func (cmd CommandSyst) RequireParam() bool {
+func (cmd commandSyst) RequireParam() bool {
 	return false
 }
 
-func (cmd CommandSyst) RequireAuth() bool {
+func (cmd commandSyst) RequireAuth() bool {
 	return false
 }
 
-func (cmd CommandSyst) Execute(conn *FTPConn, param string) {
+func (cmd commandSyst) Execute(conn *FTPConn, param string) {
 	conn.writeMessage(215, "UNIX Type: L8")
 }
 
@@ -63,17 +63,17 @@ func (cmd CommandSyst) Execute(conn *FTPConn, param string) {
 //  we plan to just accept bytes from the client unchanged, I think Image mode is
 //  adequate. The RFC requires we accept ASCII mode however, so accept it, but
 //  ignore it.
-type CommandType struct{}
+type commandType struct{}
 
-func (cmd CommandType) RequireParam() bool {
+func (cmd commandType) RequireParam() bool {
 	return false
 }
 
-func (cmd CommandType) RequireAuth() bool {
+func (cmd commandType) RequireAuth() bool {
 	return false
 }
 
-func (cmd CommandType) Execute(conn *FTPConn, param string) {
+func (cmd commandType) Execute(conn *FTPConn, param string) {
 	if strings.ToUpper(param) == "A" {
 		conn.writeMessage(200, "Type set to ASCII")
 	} else if strings.ToUpper(param) == "I" {
