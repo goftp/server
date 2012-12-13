@@ -1,6 +1,7 @@
 package graval
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -20,8 +21,10 @@ var (
 		"CWD":  commandCwd{},
 		"DELE": commandDele{},
 		"EPRT": commandEprt{},
+		"EPSV": commandEpsv{},
 		"MODE": commandMode{},
 		"NOOP": commandNoop{},
+		"PASV": commandPasv{},
 		"PORT": commandPort{},
 		"RMD":  commandRmd{},
 		"SYST": commandSyst{},
@@ -143,6 +146,30 @@ func (cmd commandEprt) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
 }
 
+// commandEpsv responds to the EPSV FTP command. It allows the client to
+// request a passive data socket with more options than the original PASV
+// command. It mainly adds ipv6 support, although we don't support that yet.
+type commandEpsv struct{}
+
+func (cmd commandEpsv) RequireParam() bool {
+	return false
+}
+
+func (cmd commandEpsv) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandEpsv) Execute(conn *ftpConn, param string) {
+	socket, err := newPassiveSocket()
+	if err != nil {
+		conn.writeMessage(425, "Data connection failed")
+		return
+	}
+	conn.dataConn = socket
+	msg := fmt.Sprintf("Entering Extended Passive Mode (|||%d|)", socket.Port())
+	conn.writeMessage(229, msg)
+}
+
 // cmdMode responds to the MODE FTP command.
 //
 // the original FTP spec had various options for hosts to negotiate how data
@@ -183,6 +210,36 @@ func (cmd commandNoop) RequireAuth() bool {
 
 func (cmd commandNoop) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(200, "OK")
+}
+
+// commandPasv responds to the PASV FTP command.
+//
+// The client is requesting us to open a new TCP listing socket and wait for them
+// to connect to it.
+type commandPasv struct{}
+
+func (cmd commandPasv) RequireParam() bool {
+	return false
+}
+
+func (cmd commandPasv) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandPasv) Execute(conn *ftpConn, param string) {
+	socket, err := newPassiveSocket()
+	if err != nil {
+		conn.writeMessage(425, "Data connection failed")
+		return
+	}
+	conn.dataConn = socket
+	p1 := socket.Port() / 256
+	p2 := socket.Port() - (p1 * 256)
+
+	quads := strings.Split(socket.Host(), ".")
+	target := fmt.Sprintf("(%s,%s,%s,%s,%d,%d)", quads[0], quads[1], quads[2], quads[3], p1, p2)
+	msg := "Entering Passive Mode "+target
+	conn.writeMessage(227, msg)
 }
 
 // commandPort responds to the PORT FTP command.

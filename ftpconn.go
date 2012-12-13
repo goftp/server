@@ -82,8 +82,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		return
 	}
 	switch command {
-	case "EPSV":
-		ftpConn.cmdEpsv(param)
 	case "LIST":
 		ftpConn.cmdList(param)
 	case "MKD":
@@ -92,8 +90,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		ftpConn.cmdNlst(param)
 	case "PASS":
 		ftpConn.cmdPass(param)
-	case "PASV":
-		ftpConn.cmdPasv(param)
 	case "PWD", "XPWD":
 		ftpConn.cmdPwd()
 	case "QUIT":
@@ -115,20 +111,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 	default:
 		ftpConn.writeMessage(500, "Command not found")
 	}
-}
-
-// cmdEpsv responds to the EPSV FTP command. It allows the client to request a
-// passive data socket with more options than the original PASV command. It
-// mainly adds ipv6 support, although we don't support that yet.
-func (ftpConn *ftpConn) cmdEpsv(param string) {
-	socket, err := newPassiveSocket()
-	if err != nil {
-		ftpConn.writeMessage(425, "Data connection failed")
-		return
-	}
-	ftpConn.dataConn = socket
-	msg := fmt.Sprintf("Entering Extended Passive Mode (|||%d|)", socket.Port())
-	ftpConn.writeMessage(229, msg)
 }
 
 // cmdList responds to the LIST FTP command. It allows the client to retreive
@@ -172,26 +154,6 @@ func (ftpConn *ftpConn) cmdPass(param string) {
 	} else {
 		ftpConn.writeMessage(530, "Incorrect password, not logged in")
 	}
-}
-
-// cmdPasv responds to the PASV FTP command.
-//
-// The client is requesting us to open a new TCP listing socket and wait for them
-// to connect to it.
-func (ftpConn *ftpConn) cmdPasv(param string) {
-	socket, err := newPassiveSocket()
-	if err != nil {
-		ftpConn.writeMessage(425, "Data connection failed")
-		return
-	}
-	ftpConn.dataConn = socket
-	p1 := socket.Port() / 256
-	p2 := socket.Port() - (p1 * 256)
-
-	quads := strings.Split(socket.Host(), ".")
-	target := fmt.Sprintf("(%s,%s,%s,%s,%d,%d)", quads[0], quads[1], quads[2], quads[3], p1, p2)
-	msg := "Entering Passive Mode "+target
-	ftpConn.writeMessage(227, msg)
 }
 
 // cmdPwd responds to the PWD FTP command.
