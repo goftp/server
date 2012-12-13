@@ -22,15 +22,18 @@ var (
 		"DELE": commandDele{},
 		"EPRT": commandEprt{},
 		"EPSV": commandEpsv{},
+		"MKD":  commandMkd{},
 		"MODE": commandMode{},
 		"NOOP": commandNoop{},
 		"PASV": commandPasv{},
 		"PORT": commandPort{},
+		"PWD":  commandPwd{},
 		"RMD":  commandRmd{},
 		"SYST": commandSyst{},
 		"TYPE": commandType{},
 		"XCUP": commandCdup{},
 		"XCWD": commandCwd{},
+		"XPWD": commandPwd{},
 		"XRMD": commandRmd{},
 	}
 )
@@ -170,6 +173,27 @@ func (cmd commandEpsv) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(229, msg)
 }
 
+// commandMkd responds to the MKD FTP command. It allows the client to create
+// a new directory
+type commandMkd struct{}
+
+func (cmd commandMkd) RequireParam() bool {
+	return false
+}
+
+func (cmd commandMkd) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandMkd) Execute(conn *ftpConn, param string) {
+	path := conn.buildPath(param)
+	if conn.driver.MakeDir(path) {
+		conn.writeMessage(257, "Directory created")
+	} else {
+		conn.writeMessage(550, "Action not taken")
+	}
+}
+
 // cmdMode responds to the MODE FTP command.
 //
 // the original FTP spec had various options for hosts to negotiate how data
@@ -269,6 +293,24 @@ func (cmd commandPort) Execute(conn *ftpConn, param string) {
 	}
 	conn.dataConn = socket
 	conn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
+}
+
+
+// commandPwd responds to the PWD FTP command.
+//
+// Tells the client what the current working directory is.
+type commandPwd struct{}
+
+func (cmd commandPwd) RequireParam() bool {
+	return false
+}
+
+func (cmd commandPwd) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandPwd) Execute(conn *ftpConn, param string) {
+	conn.writeMessage(257, "\""+conn.namePrefix+"\" is the current directory")
 }
 
 // cmdRmd responds to the RMD FTP command. It allows the client to delete a

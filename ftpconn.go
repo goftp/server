@@ -84,14 +84,10 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 	switch command {
 	case "LIST":
 		ftpConn.cmdList(param)
-	case "MKD":
-		ftpConn.cmdMkd(param)
 	case "NLST":
 		ftpConn.cmdNlst(param)
 	case "PASS":
 		ftpConn.cmdPass(param)
-	case "PWD", "XPWD":
-		ftpConn.cmdPwd()
 	case "QUIT":
 		ftpConn.Close()
 	case "RETR":
@@ -123,17 +119,6 @@ func (ftpConn *ftpConn) cmdList(param string) {
 	ftpConn.sendOutofbandData(formatter.Detailed())
 }
 
-// cmdMkd responds to the MKD FTP command. It allows the client to create
-// a new directory
-func (ftpConn *ftpConn) cmdMkd(param string) {
-	path := ftpConn.buildPath(param)
-	if ftpConn.driver.MakeDir(path) {
-		ftpConn.writeMessage(257, "Directory created")
-	} else {
-		ftpConn.writeMessage(550, "Action not taken")
-	}
-}
-
 // cmdNlst responds to the NLST FTP command. It allows the client to retreive
 // a list of filenames in the current directory.
 func (ftpConn *ftpConn) cmdNlst(param string) {
@@ -154,13 +139,6 @@ func (ftpConn *ftpConn) cmdPass(param string) {
 	} else {
 		ftpConn.writeMessage(530, "Incorrect password, not logged in")
 	}
-}
-
-// cmdPwd responds to the PWD FTP command.
-//
-// Tells the client what the current working directory is.
-func (ftpConn *ftpConn) cmdPwd() {
-	ftpConn.writeMessage(257, "\""+ftpConn.namePrefix+"\" is the current directory")
 }
 
 // cmdRetr responds to the RETR FTP command. It allows the client to download a
