@@ -9,7 +9,6 @@
 package graval
 
 import (
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -29,14 +28,14 @@ func NewFTPServer(hostname string, port int, factory FTPDriverFactory) *FTPServe
 	return s
 }
 
-func (ftpServer *FTPServer) ListenAndServe() (err error) {
+func (ftpServer *FTPServer) ListenAndServe() error {
 	laddr, err := net.ResolveTCPAddr("tcp", ftpServer.listenTo)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	listener, err := net.ListenTCP("tcp", laddr)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	for {
 		ftpConn, err := ftpServer.accept(listener)
@@ -45,7 +44,7 @@ func (ftpServer *FTPServer) ListenAndServe() (err error) {
 		}
 		go ftpConn.Serve()
 	}
-	return
+	return nil
 }
 
 func (ftpServer *FTPServer) accept(listener *net.TCPListener) (ftpConn *ftpConn, err error) {
