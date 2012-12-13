@@ -80,7 +80,7 @@ func (cmd commandCdup) RequireParam() bool {
 }
 
 func (cmd commandCdup) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandCdup) Execute(conn *ftpConn, param string) {
@@ -97,7 +97,7 @@ func (cmd commandCwd) RequireParam() bool {
 }
 
 func (cmd commandCwd) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandCwd) Execute(conn *ftpConn, param string) {
@@ -141,7 +141,7 @@ func (cmd commandEprt) RequireParam() bool {
 }
 
 func (cmd commandEprt) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandEprt) Execute(conn *ftpConn, param string) {
@@ -173,7 +173,7 @@ func (cmd commandEpsv) RequireParam() bool {
 }
 
 func (cmd commandEpsv) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandEpsv) Execute(conn *ftpConn, param string) {
@@ -196,7 +196,7 @@ func (cmd commandList) RequireParam() bool {
 }
 
 func (cmd commandList) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandList) Execute(conn *ftpConn, param string) {
@@ -216,7 +216,7 @@ func (cmd commandNlst) RequireParam() bool {
 }
 
 func (cmd commandNlst) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandNlst) Execute(conn *ftpConn, param string) {
@@ -261,7 +261,7 @@ func (cmd commandMode) RequireParam() bool {
 }
 
 func (cmd commandMode) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandMode) Execute(conn *ftpConn, param string) {
@@ -323,7 +323,7 @@ func (cmd commandPasv) RequireParam() bool {
 }
 
 func (cmd commandPasv) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandPasv) Execute(conn *ftpConn, param string) {
@@ -353,7 +353,7 @@ func (cmd commandPort) RequireParam() bool {
 }
 
 func (cmd commandPort) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandPort) Execute(conn *ftpConn, param string) {
@@ -382,7 +382,7 @@ func (cmd commandPwd) RequireParam() bool {
 }
 
 func (cmd commandPwd) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandPwd) Execute(conn *ftpConn, param string) {
@@ -414,7 +414,7 @@ func (cmd commandRetr) RequireParam() bool {
 }
 
 func (cmd commandRetr) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRetr) Execute(conn *ftpConn, param string) {
@@ -497,7 +497,7 @@ func (cmd commandSize) RequireParam() bool {
 }
 
 func (cmd commandSize) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandSize) Execute(conn *ftpConn, param string) {
@@ -519,7 +519,7 @@ func (cmd commandStor) RequireParam() bool {
 }
 
 func (cmd commandStor) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandStor) Execute(conn *ftpConn, param string) {
@@ -563,7 +563,7 @@ func (cmd commandStru) RequireParam() bool {
 }
 
 func (cmd commandStru) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandStru) Execute(conn *ftpConn, param string) {
@@ -582,7 +582,7 @@ func (cmd commandSyst) RequireParam() bool {
 }
 
 func (cmd commandSyst) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandSyst) Execute(conn *ftpConn, param string) {
@@ -606,7 +606,7 @@ func (cmd commandType) RequireParam() bool {
 }
 
 func (cmd commandType) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandType) Execute(conn *ftpConn, param string) {
