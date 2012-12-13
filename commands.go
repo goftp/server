@@ -32,8 +32,10 @@ var (
 		"PORT": commandPort{},
 		"PWD":  commandPwd{},
 		"QUIT": commandQuit{},
+		"RETR": commandRetr{},
 		"RMD":  commandRmd{},
 		"SIZE": commandSize{},
+		"STOR": commandStor{},
 		"SYST": commandSyst{},
 		"TYPE": commandType{},
 		"USER": commandUser{},
@@ -381,6 +383,8 @@ func (cmd commandPwd) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(257, "\""+conn.namePrefix+"\" is the current directory")
 }
 
+// CommandQuit responds to the QUIT FTP command. The client has requested the
+// connection be closed.
 type commandQuit struct{}
 
 func (cmd commandQuit) RequireParam() bool {
@@ -393,6 +397,30 @@ func (cmd commandQuit) RequireAuth() bool {
 
 func (cmd commandQuit) Execute(conn *ftpConn, param string) {
 	conn.Close()
+}
+
+// commandRetr responds to the RETR FTP command. It allows the client to
+// download a file.
+type commandRetr struct{}
+
+func (cmd commandRetr) RequireParam() bool {
+	return false
+}
+
+func (cmd commandRetr) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandRetr) Execute(conn *ftpConn, param string) {
+	path := conn.buildPath(param)
+	data, err := conn.driver.GetFile(path)
+	if err == nil {
+		bytes := strconv.Itoa(len(data))
+		conn.writeMessage(150, "Data transfer starting "+bytes+" bytes")
+		conn.sendOutofbandData(data)
+	} else {
+		conn.writeMessage(551, "File not available")
+	}
 }
 
 // cmdRmd responds to the RMD FTP command. It allows the client to delete a
@@ -435,6 +463,43 @@ func (cmd commandSize) Execute(conn *ftpConn, param string) {
 		conn.writeMessage(213, strconv.Itoa(bytes))
 	} else {
 		conn.writeMessage(450, "file not available")
+	}
+}
+
+// commandStor responds to the STOR FTP command. It allows the user to upload a
+// new file.
+type commandStor struct{}
+
+func (cmd commandStor) RequireParam() bool {
+	return false
+}
+
+func (cmd commandStor) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandStor) Execute(conn *ftpConn, param string) {
+	targetPath := conn.buildPath(param)
+	conn.writeMessage(150, "Data transfer starting")
+	tmpFile, err := ioutil.TempFile("", "stor")
+	if err != nil {
+		conn.writeMessage(450, "error during transfer")
+		return
+	}
+	bytes, err := io.Copy(tmpFile, ftpConn.dataConn)
+	if err != nil {
+		conn.writeMessage(450, "error during transfer")
+		return
+	}
+	tmpFile.Seek(0,0)
+	uploadSuccess := conn.driver.PutFile(targetPath, tmpFile)
+	tmpFile.Close()
+	os.Remove(tmpFile.Name())
+	if uploadSuccess {
+		msg := "OK, received "+strconv.Itoa(int(bytes))+" bytes"
+		conn.writeMessage(226, msg)
+	} else {
+		conn.writeMessage(550, "Action not taken")
 	}
 }
 

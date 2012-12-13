@@ -82,32 +82,14 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		return
 	}
 	switch command {
-	case "RETR":
-		ftpConn.cmdRetr(param)
 	case "RNFR":
 		ftpConn.cmdRnfr(param)
 	case "RNTO":
 		ftpConn.cmdRnto(param)
-	case "STOR":
-		ftpConn.cmdStor(param)
 	case "STRU":
 		ftpConn.cmdStru(param)
 	default:
 		ftpConn.writeMessage(500, "Command not found")
-	}
-}
-
-// cmdRetr responds to the RETR FTP command. It allows the client to download a
-// file.
-func (ftpConn *ftpConn) cmdRetr(param string) {
-	path := ftpConn.buildPath(param)
-	data, err := ftpConn.driver.GetFile(path)
-	if err == nil {
-		bytes := strconv.Itoa(len(data))
-		ftpConn.writeMessage(150, "Data transfer starting "+bytes+" bytes")
-		ftpConn.sendOutofbandData(data)
-	} else {
-		ftpConn.writeMessage(551, "File not available")
 	}
 }
 
@@ -124,33 +106,6 @@ func (ftpConn *ftpConn) cmdRnto(param string) {
 	toPath := ftpConn.buildPath(param)
 	if ftpConn.driver.Rename(ftpConn.renameFrom, toPath) {
 		ftpConn.writeMessage(250, "File renamed")
-	} else {
-		ftpConn.writeMessage(550, "Action not taken")
-	}
-}
-
-// cmdStor responds to the STOR FTP command. It allows the user to upload a new
-// file.
-func (ftpConn *ftpConn) cmdStor(param string) {
-	targetPath := ftpConn.buildPath(param)
-	ftpConn.writeMessage(150, "Data transfer starting")
-	tmpFile, err := ioutil.TempFile("", "stor")
-	if err != nil {
-		ftpConn.writeMessage(450, "error during transfer")
-		return
-	}
-	bytes, err := io.Copy(tmpFile, ftpConn.dataConn)
-	if err != nil {
-		ftpConn.writeMessage(450, "error during transfer")
-		return
-	}
-	tmpFile.Seek(0,0)
-	uploadSuccess := ftpConn.driver.PutFile(targetPath, tmpFile)
-	tmpFile.Close()
-	os.Remove(tmpFile.Name())
-	if uploadSuccess {
-		msg := "OK, received "+strconv.Itoa(int(bytes))+" bytes"
-		ftpConn.writeMessage(226, msg)
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
 	}
