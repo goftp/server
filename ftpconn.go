@@ -3,11 +3,8 @@ package graval
 import (
 	"bufio"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -82,30 +79,8 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		return
 	}
 	switch command {
-	case "RNFR":
-		ftpConn.cmdRnfr(param)
-	case "RNTO":
-		ftpConn.cmdRnto(param)
 	default:
 		ftpConn.writeMessage(500, "Command not found")
-	}
-}
-
-// cmdRnfr responds to the RNFR FTP command. It's the first of two commands
-// required for a client to rename a file.
-func (ftpConn *ftpConn) cmdRnfr(param string) {
-	ftpConn.renameFrom = ftpConn.buildPath(param)
-	ftpConn.writeMessage(350, "Requested file action pending further information.")
-}
-
-// cmdRnto responds to the RNTO FTP command. It's the second of two commands
-// required for a client to rename a file.
-func (ftpConn *ftpConn) cmdRnto(param string) {
-	toPath := ftpConn.buildPath(param)
-	if ftpConn.driver.Rename(ftpConn.renameFrom, toPath) {
-		ftpConn.writeMessage(250, "File renamed")
-	} else {
-		ftpConn.writeMessage(550, "Action not taken")
 	}
 }
 

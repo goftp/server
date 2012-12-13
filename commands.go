@@ -2,6 +2,9 @@ package graval
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -33,6 +36,8 @@ var (
 		"PWD":  commandPwd{},
 		"QUIT": commandQuit{},
 		"RETR": commandRetr{},
+		"RNFR": commandRnfr{},
+		"RNTO": commandRnto{},
 		"RMD":  commandRmd{},
 		"SIZE": commandSize{},
 		"STOR": commandStor{},
@@ -424,6 +429,44 @@ func (cmd commandRetr) Execute(conn *ftpConn, param string) {
 	}
 }
 
+// commandRnfr responds to the RNFR FTP command. It's the first of two commands
+// required for a client to rename a file.
+type commandRnfr struct{}
+
+func (cmd commandRnfr) RequireParam() bool {
+	return false
+}
+
+func (cmd commandRnfr) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandRnfr) Execute(conn *ftpConn, param string) {
+	conn.renameFrom = conn.buildPath(param)
+	conn.writeMessage(350, "Requested file action pending further information.")
+}
+
+// cmdRnto responds to the RNTO FTP command. It's the second of two commands
+// required for a client to rename a file.
+type commandRnto struct{}
+
+func (cmd commandRnto) RequireParam() bool {
+	return false
+}
+
+func (cmd commandRnto) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandRnto) Execute(conn *ftpConn, param string) {
+	toPath := conn.buildPath(param)
+	if conn.driver.Rename(conn.renameFrom, toPath) {
+		conn.writeMessage(250, "File renamed")
+	} else {
+		conn.writeMessage(550, "Action not taken")
+	}
+}
+
 // cmdRmd responds to the RMD FTP command. It allows the client to delete a
 // directory.
 type commandRmd struct{}
@@ -487,7 +530,7 @@ func (cmd commandStor) Execute(conn *ftpConn, param string) {
 		conn.writeMessage(450, "error during transfer")
 		return
 	}
-	bytes, err := io.Copy(tmpFile, ftpConn.dataConn)
+	bytes, err := io.Copy(tmpFile, conn.dataConn)
 	if err != nil {
 		conn.writeMessage(450, "error during transfer")
 		return
