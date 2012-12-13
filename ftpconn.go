@@ -163,7 +163,7 @@ func (ftpConn *ftpConn) cmdList(param string) {
 	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
 	path := ftpConn.buildPath(param)
 	files := ftpConn.driver.DirContents(path)
-	formatter := NewListFormatter(files)
+	formatter := newListFormatter(files)
 	ftpConn.sendOutofbandData(formatter.Detailed())
 }
 
@@ -184,7 +184,7 @@ func (ftpConn *ftpConn) cmdNlst(param string) {
 	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
 	path := ftpConn.buildPath(param)
 	files := ftpConn.driver.DirContents(path)
-	formatter := NewListFormatter(files)
+	formatter := newListFormatter(files)
 	ftpConn.sendOutofbandData(formatter.Short())
 }
 

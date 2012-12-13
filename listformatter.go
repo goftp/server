@@ -7,19 +7,19 @@ import (
 	"strings"
 )
 
-type ListFormatter struct {
+type listFormatter struct {
 	files    []os.FileInfo
 }
 
-func NewListFormatter(files []os.FileInfo) *ListFormatter {
-	f := new(ListFormatter)
+func newListFormatter(files []os.FileInfo) *listFormatter {
+	f := new(listFormatter)
 	f.files = files
 	return f
 }
 
 // Short returns a string that lists the collection of files by name only,
 // one per line
-func (formatter *ListFormatter) Short() string {
+func (formatter *listFormatter) Short() string {
 	output := ""
 	for _, file := range formatter.files {
 		output += file.Name() + "\r\n"
@@ -30,7 +30,7 @@ func (formatter *ListFormatter) Short() string {
 
 // Detailed returns a string that lists the collection of files with extra
 // detail, one per line
-func (formatter *ListFormatter) Detailed() string {
+func (formatter *listFormatter) Detailed() string {
 	output := ""
 	for _, file := range formatter.files {
 		output += file.Mode().String()
