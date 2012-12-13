@@ -74,14 +74,11 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 	log.Print(line)
 	command, param := ftpConn.parseLine(line)
 	cmdObj := commands[command]
-	if cmdObj != nil {
-		cmdObj.Execute(ftpConn, param)
+	if cmdObj == nil {
+		ftpConn.writeMessage(500, "Command not found")
 		return
 	}
-	switch command {
-	default:
-		ftpConn.writeMessage(500, "Command not found")
-	}
+	cmdObj.Execute(ftpConn, param)
 }
 
 func (ftpConn *ftpConn) parseLine(line string) (string, string) {
