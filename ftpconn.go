@@ -17,7 +17,7 @@ const (
 	welcomeMessage = "Welcome to the Go FTP Server"
 )
 
-type FTPConn struct {
+type ftpConn struct {
 	conn          *net.TCPConn
 	controlReader *bufio.Reader
 	controlWriter *bufio.Writer
@@ -29,12 +29,12 @@ type FTPConn struct {
 	renameFrom    string
 }
 
-// NewFTPConn constructs a new object that will handle the FTP protocol over
+// NewftpConn constructs a new object that will handle the FTP protocol over
 // an active net.TCPConn. The TCP connection should already be open before
 // it is handed to this functions. driver is an instance of FTPDrive that
 // will handle all auth and persistence details.
-func NewFTPConn(tcpConn *net.TCPConn, driver FTPDriver) *FTPConn {
-	c := new(FTPConn)
+func newftpConn(tcpConn *net.TCPConn, driver FTPDriver) *ftpConn {
+	c := new(ftpConn)
 	c.namePrefix = "/"
 	c.conn = tcpConn
 	c.controlReader = bufio.NewReader(tcpConn)
@@ -48,7 +48,7 @@ func NewFTPConn(tcpConn *net.TCPConn, driver FTPDriver) *FTPConn {
 // message when the connection closes. This loop will be running inside a
 // goroutine, so use this channel to be notified when the connection can be
 // cleaned up.
-func (ftpConn *FTPConn) Serve() {
+func (ftpConn *ftpConn) Serve() {
 	log.Print("Connection Established")
 	// send welcome
 	ftpConn.writeMessage(220, welcomeMessage)
@@ -64,7 +64,7 @@ func (ftpConn *FTPConn) Serve() {
 }
 
 // Close will manually close this connection, even if the client isn't ready.
-func (ftpConn *FTPConn) Close() {
+func (ftpConn *ftpConn) Close() {
 	ftpConn.conn.Close()
 	if ftpConn.dataConn != nil {
 		ftpConn.dataConn.Close()
@@ -73,7 +73,7 @@ func (ftpConn *FTPConn) Close() {
 
 // receiveLine accepts a single line FTP command and co-ordinates an
 // appropriate response.
-func (ftpConn *FTPConn) receiveLine(line string) {
+func (ftpConn *ftpConn) receiveLine(line string) {
 	log.Print(line)
 	command, param := ftpConn.parseLine(line)
 	cmdObj := commands[command]
@@ -124,7 +124,7 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 // cmdEprt responds to the EPRT FTP command. It allows the client to request an
 // active data socket with more options than the original PORT command. It
 // mainly adds ipv6 support, although we don't support that yet.
-func (ftpConn *FTPConn) cmdEprt(param string) {
+func (ftpConn *ftpConn) cmdEprt(param string) {
 	delim := string(param[0:1])
 	parts := strings.Split(param, delim)
 	addressFamily, err := strconv.Atoi(parts[1])
@@ -146,7 +146,7 @@ func (ftpConn *FTPConn) cmdEprt(param string) {
 // cmdEpsv responds to the EPSV FTP command. It allows the client to request a
 // passive data socket with more options than the original PASV command. It
 // mainly adds ipv6 support, although we don't support that yet.
-func (ftpConn *FTPConn) cmdEpsv(param string) {
+func (ftpConn *ftpConn) cmdEpsv(param string) {
 	socket, err := NewPassiveSocket()
 	if err != nil {
 		ftpConn.writeMessage(425, "Data connection failed")
@@ -159,7 +159,7 @@ func (ftpConn *FTPConn) cmdEpsv(param string) {
 
 // cmdList responds to the LIST FTP command. It allows the client to retreive
 // a detailed listing of the contents of a directory.
-func (ftpConn *FTPConn) cmdList(param string) {
+func (ftpConn *ftpConn) cmdList(param string) {
 	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
 	path := ftpConn.buildPath(param)
 	files := ftpConn.driver.DirContents(path)
@@ -169,7 +169,7 @@ func (ftpConn *FTPConn) cmdList(param string) {
 
 // cmdMkd responds to the MKD FTP command. It allows the client to create
 // a new directory
-func (ftpConn *FTPConn) cmdMkd(param string) {
+func (ftpConn *ftpConn) cmdMkd(param string) {
 	path := ftpConn.buildPath(param)
 	if ftpConn.driver.MakeDir(path) {
 		ftpConn.writeMessage(257, "Directory created")
@@ -180,7 +180,7 @@ func (ftpConn *FTPConn) cmdMkd(param string) {
 
 // cmdNlst responds to the NLST FTP command. It allows the client to retreive
 // a list of filenames in the current directory.
-func (ftpConn *FTPConn) cmdNlst(param string) {
+func (ftpConn *ftpConn) cmdNlst(param string) {
 	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
 	path := ftpConn.buildPath(param)
 	files := ftpConn.driver.DirContents(path)
@@ -190,7 +190,7 @@ func (ftpConn *FTPConn) cmdNlst(param string) {
 
 // cmdPass respond to the PASS FTP command by asking the driver if the supplied
 // username and password are valid
-func (ftpConn *FTPConn) cmdPass(param string) {
+func (ftpConn *ftpConn) cmdPass(param string) {
 	if ftpConn.driver.Authenticate(ftpConn.reqUser, param) {
 		ftpConn.user = ftpConn.reqUser
 		ftpConn.reqUser = ""
@@ -204,7 +204,7 @@ func (ftpConn *FTPConn) cmdPass(param string) {
 //
 // The client is requesting us to open a new TCP listing socket and wait for them
 // to connect to it.
-func (ftpConn *FTPConn) cmdPasv(param string) {
+func (ftpConn *ftpConn) cmdPasv(param string) {
 	socket, err := NewPassiveSocket()
 	if err != nil {
 		ftpConn.writeMessage(425, "Data connection failed")
@@ -224,7 +224,7 @@ func (ftpConn *FTPConn) cmdPasv(param string) {
 //
 // The client has opened a listening socket for sending out of band data and
 // is requesting that we connect to it
-func (ftpConn *FTPConn) cmdPort(param string) {
+func (ftpConn *ftpConn) cmdPort(param string) {
 	nums := strings.Split(param, ",")
 	portOne, _ := strconv.Atoi(nums[4])
 	portTwo, _ := strconv.Atoi(nums[5])
@@ -242,13 +242,13 @@ func (ftpConn *FTPConn) cmdPort(param string) {
 // cmdPwd responds to the PWD FTP command.
 //
 // Tells the client what the current working directory is.
-func (ftpConn *FTPConn) cmdPwd() {
+func (ftpConn *ftpConn) cmdPwd() {
 	ftpConn.writeMessage(257, "\""+ftpConn.namePrefix+"\" is the current directory")
 }
 
 // cmdRetr responds to the RETR FTP command. It allows the client to download a
 // file.
-func (ftpConn *FTPConn) cmdRetr(param string) {
+func (ftpConn *ftpConn) cmdRetr(param string) {
 	path := ftpConn.buildPath(param)
 	data, err := ftpConn.driver.GetFile(path)
 	if err == nil {
@@ -262,14 +262,14 @@ func (ftpConn *FTPConn) cmdRetr(param string) {
 
 // cmdRnfr responds to the RNFR FTP command. It's the first of two commands
 // required for a client to rename a file.
-func (ftpConn *FTPConn) cmdRnfr(param string) {
+func (ftpConn *ftpConn) cmdRnfr(param string) {
 	ftpConn.renameFrom = ftpConn.buildPath(param)
 	ftpConn.writeMessage(350, "Requested file action pending further information.")
 }
 
 // cmdRnto responds to the RNTO FTP command. It's the second of two commands
 // required for a client to rename a file.
-func (ftpConn *FTPConn) cmdRnto(param string) {
+func (ftpConn *ftpConn) cmdRnto(param string) {
 	toPath := ftpConn.buildPath(param)
 	if ftpConn.driver.Rename(ftpConn.renameFrom, toPath) {
 		ftpConn.writeMessage(250, "File renamed")
@@ -280,7 +280,7 @@ func (ftpConn *FTPConn) cmdRnto(param string) {
 
 // cmdSize responds to the SIZE FTP command. It returns the size of the
 // requested path in bytes.
-func (ftpConn *FTPConn) cmdSize(param string) {
+func (ftpConn *ftpConn) cmdSize(param string) {
 	path := ftpConn.buildPath(param)
 	bytes := ftpConn.driver.Bytes(path)
 	if bytes >= 0 {
@@ -292,7 +292,7 @@ func (ftpConn *FTPConn) cmdSize(param string) {
 
 // cmdStor responds to the STOR FTP command. It allows the user to upload a new
 // file.
-func (ftpConn *FTPConn) cmdStor(param string) {
+func (ftpConn *ftpConn) cmdStor(param string) {
 	targetPath := ftpConn.buildPath(param)
 	ftpConn.writeMessage(150, "Data transfer starting")
 	tmpFile, err := ioutil.TempFile("", "stor")
@@ -326,7 +326,7 @@ func (ftpConn *FTPConn) cmdStor(param string) {
 //
 // These days files are sent unmodified, and F(ile) mode is the only one we
 // really need to support.
-func (ftpConn *FTPConn) cmdStru(param string) {
+func (ftpConn *ftpConn) cmdStru(param string) {
 	if strings.ToUpper(param) == "F" {
 		ftpConn.writeMessage(200, "OK")
 	} else {
@@ -335,12 +335,12 @@ func (ftpConn *FTPConn) cmdStru(param string) {
 }
 
 // cmdUser responds to the USER FTP command by asking for the password
-func (ftpConn *FTPConn) cmdUser(param string) {
+func (ftpConn *ftpConn) cmdUser(param string) {
 	ftpConn.reqUser = param
 	ftpConn.writeMessage(331, "User name ok, password required")
 }
 
-func (ftpConn *FTPConn) parseLine(line string) (string, string) {
+func (ftpConn *ftpConn) parseLine(line string) (string, string) {
 	params := strings.SplitN(strings.Trim(line, "\r\n"), " ", 2)
 	if len(params) == 1 {
 		return params[0], ""
@@ -349,7 +349,7 @@ func (ftpConn *FTPConn) parseLine(line string) (string, string) {
 }
 
 // writeMessage will send a standard FTP response back to the client.
-func (ftpConn *FTPConn) writeMessage(code int, message string) (wrote int, err error) {
+func (ftpConn *ftpConn) writeMessage(code int, message string) (wrote int, err error) {
 	line := fmt.Sprintf("%d %s\r\n", code, message)
 	log.Print(line)
 	wrote, err = ftpConn.controlWriter.WriteString(line)
@@ -374,7 +374,7 @@ func (ftpConn *FTPConn) writeMessage(code int, message string) (wrote int, err e
 // The driver implementation is responsible for deciding how to treat this path.
 // Obviously they MUST NOT just read the path off disk. The probably want to
 // prefix the path with something to scope the users access to a sandbox.
-func (ftpConn *FTPConn) buildPath(filename string) (fullPath string) {
+func (ftpConn *ftpConn) buildPath(filename string) (fullPath string) {
 	if len(filename) > 0 && filename[0:1] == "/" {
 		fullPath = filepath.Clean(filename)
 	} else if len(filename) > 0 && filename != "-a" {
@@ -388,7 +388,7 @@ func (ftpConn *FTPConn) buildPath(filename string) (fullPath string) {
 
 // sendOutofbandData will send a string to the client via the currently open
 // data socket. Assumes the socket is open and ready to be used.
-func (ftpConn *FTPConn) sendOutofbandData(data string) {
+func (ftpConn *ftpConn) sendOutofbandData(data string) {
 	bytes := len(data)
 	ftpConn.dataConn.Write([]byte(data))
 	ftpConn.dataConn.Close()

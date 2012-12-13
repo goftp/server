@@ -40,10 +40,10 @@ func (ftpServer *FTPServer) Listen() (err error) {
 	return
 }
 
-func (ftpServer *FTPServer) Accept(listener *net.TCPListener) (ftpConn *FTPConn, err error) {
+func (ftpServer *FTPServer) Accept(listener *net.TCPListener) (ftpConn *ftpConn, err error) {
 	tcpConn, err := listener.AcceptTCP()
 	if err == nil {
-		ftpConn = NewFTPConn(tcpConn, ftpServer.driverFactory.NewDriver())
+		ftpConn = newftpConn(tcpConn, ftpServer.driverFactory.NewDriver())
 	}
 	return
 }

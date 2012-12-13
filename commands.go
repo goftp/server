@@ -7,7 +7,7 @@ import (
 type ftpCommand interface {
 	RequireParam() bool
 	RequireAuth() bool
-	Execute(*FTPConn, string)
+	Execute(*ftpConn, string)
 }
 
 type commandMap map[string]ftpCommand
@@ -43,7 +43,7 @@ func (cmd commandAllo) RequireAuth() bool {
 	return false
 }
 
-func (cmd commandAllo) Execute(conn *FTPConn, param string) {
+func (cmd commandAllo) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(202, "Obsolete")
 }
 
@@ -60,7 +60,7 @@ func (cmd commandCdup) RequireAuth() bool {
 	return false
 }
 
-func (cmd commandCdup) Execute(conn *FTPConn, param string) {
+func (cmd commandCdup) Execute(conn *ftpConn, param string) {
 	otherCmd := &commandCwd{}
 	otherCmd.Execute(conn, "..")
 }
@@ -77,7 +77,7 @@ func (cmd commandCwd) RequireAuth() bool {
 	return false
 }
 
-func (cmd commandCwd) Execute(conn *FTPConn, param string) {
+func (cmd commandCwd) Execute(conn *ftpConn, param string) {
 	path := conn.buildPath(param)
 	if conn.driver.ChangeDir(path) {
 		conn.namePrefix = path
@@ -99,7 +99,7 @@ func (cmd commandDele) RequireAuth() bool {
 	return false
 }
 
-func (cmd commandDele) Execute(conn *FTPConn, param string) {
+func (cmd commandDele) Execute(conn *ftpConn, param string) {
 	path := conn.buildPath(param)
 	if conn.driver.DeleteFile(path) {
 		conn.writeMessage(250, "File deleted")
@@ -124,7 +124,7 @@ func (cmd commandMode) RequireAuth() bool {
 	return false
 }
 
-func (cmd commandMode) Execute(conn *FTPConn, param string) {
+func (cmd commandMode) Execute(conn *ftpConn, param string) {
 	if strings.ToUpper(param) == "S" {
 		conn.writeMessage(200, "OK")
 	} else {
@@ -146,7 +146,7 @@ func (cmd commandNoop) RequireAuth() bool {
 	return false
 }
 
-func (cmd commandNoop) Execute(conn *FTPConn, param string) {
+func (cmd commandNoop) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(200, "OK")
 }
 
@@ -162,7 +162,7 @@ func (cmd commandRmd) RequireAuth() bool {
 	return false
 }
 
-func (cmd commandRmd) Execute(conn *FTPConn, param string) {
+func (cmd commandRmd) Execute(conn *ftpConn, param string) {
 	path := conn.buildPath(param)
 	if conn.driver.DeleteDir(path) {
 		conn.writeMessage(250, "Directory deleted")
@@ -182,7 +182,7 @@ func (cmd commandSyst) RequireAuth() bool {
 	return false
 }
 
-func (cmd commandSyst) Execute(conn *FTPConn, param string) {
+func (cmd commandSyst) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(215, "UNIX Type: L8")
 }
 
@@ -206,7 +206,7 @@ func (cmd commandType) RequireAuth() bool {
 	return false
 }
 
-func (cmd commandType) Execute(conn *FTPConn, param string) {
+func (cmd commandType) Execute(conn *ftpConn, param string) {
 	if strings.ToUpper(param) == "A" {
 		conn.writeMessage(200, "Type set to ASCII")
 	} else if strings.ToUpper(param) == "I" {
