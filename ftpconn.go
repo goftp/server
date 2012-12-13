@@ -82,8 +82,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		return
 	}
 	switch command {
-	case "PASS":
-		ftpConn.cmdPass(param)
 	case "QUIT":
 		ftpConn.Close()
 	case "RETR":
@@ -98,22 +96,8 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		ftpConn.cmdStor(param)
 	case "STRU":
 		ftpConn.cmdStru(param)
-	case "USER":
-		ftpConn.cmdUser(param)
 	default:
 		ftpConn.writeMessage(500, "Command not found")
-	}
-}
-
-// cmdPass respond to the PASS FTP command by asking the driver if the supplied
-// username and password are valid
-func (ftpConn *ftpConn) cmdPass(param string) {
-	if ftpConn.driver.Authenticate(ftpConn.reqUser, param) {
-		ftpConn.user = ftpConn.reqUser
-		ftpConn.reqUser = ""
-		ftpConn.writeMessage(230, "Password ok, continue")
-	} else {
-		ftpConn.writeMessage(530, "Incorrect password, not logged in")
 	}
 }
 
@@ -203,12 +187,6 @@ func (ftpConn *ftpConn) cmdStru(param string) {
 	} else {
 		ftpConn.writeMessage(504, "STRU is an obsolete command")
 	}
-}
-
-// cmdUser responds to the USER FTP command by asking for the password
-func (ftpConn *ftpConn) cmdUser(param string) {
-	ftpConn.reqUser = param
-	ftpConn.writeMessage(331, "User name ok, password required")
 }
 
 func (ftpConn *ftpConn) parseLine(line string) (string, string) {

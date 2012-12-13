@@ -27,12 +27,14 @@ var (
 		"MKD":  commandMkd{},
 		"MODE": commandMode{},
 		"NOOP": commandNoop{},
+		"PASS": commandPass{},
 		"PASV": commandPasv{},
 		"PORT": commandPort{},
 		"PWD":  commandPwd{},
 		"RMD":  commandRmd{},
 		"SYST": commandSyst{},
 		"TYPE": commandType{},
+		"USER": commandUser{},
 		"XCUP": commandCdup{},
 		"XCWD": commandCwd{},
 		"XPWD": commandPwd{},
@@ -278,6 +280,28 @@ func (cmd commandNoop) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(200, "OK")
 }
 
+// commandPass respond to the PASS FTP command by asking the driver if the
+// supplied username and password are valid
+type commandPass struct{}
+
+func (cmd commandPass) RequireParam() bool {
+	return false
+}
+
+func (cmd commandPass) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandPass) Execute(conn *ftpConn, param string) {
+	if conn.driver.Authenticate(conn.reqUser, param) {
+		conn.user = conn.reqUser
+		conn.reqUser = ""
+		conn.writeMessage(230, "Password ok, continue")
+	} else {
+		conn.writeMessage(530, "Incorrect password, not logged in")
+	}
+}
+
 // commandPasv responds to the PASV FTP command.
 //
 // The client is requesting us to open a new TCP listing socket and wait for them
@@ -419,4 +443,20 @@ func (cmd commandType) Execute(conn *ftpConn, param string) {
 	} else {
 		conn.writeMessage(500, "Invalid type")
 	}
+}
+
+// commandUser responds to the USER FTP command by asking for the password
+type commandUser struct{}
+
+func (cmd commandUser) RequireParam() bool {
+	return false
+}
+
+func (cmd commandUser) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandUser) Execute(conn *ftpConn, param string) {
+	conn.reqUser = param
+	conn.writeMessage(331, "User name ok, password required")
 }
