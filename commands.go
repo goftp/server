@@ -22,6 +22,8 @@ var (
 		"DELE": commandDele{},
 		"EPRT": commandEprt{},
 		"EPSV": commandEpsv{},
+		"LIST": commandList{},
+		"NLST": commandNlst{},
 		"MKD":  commandMkd{},
 		"MODE": commandMode{},
 		"NOOP": commandNoop{},
@@ -171,6 +173,46 @@ func (cmd commandEpsv) Execute(conn *ftpConn, param string) {
 	conn.dataConn = socket
 	msg := fmt.Sprintf("Entering Extended Passive Mode (|||%d|)", socket.Port())
 	conn.writeMessage(229, msg)
+}
+
+// commandList responds to the LIST FTP command. It allows the client to retreive
+// a detailed listing of the contents of a directory.
+type commandList struct{}
+
+func (cmd commandList) RequireParam() bool {
+	return false
+}
+
+func (cmd commandList) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandList) Execute(conn *ftpConn, param string) {
+	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
+	path  := conn.buildPath(param)
+	files := conn.driver.DirContents(path)
+	formatter := newListFormatter(files)
+	conn.sendOutofbandData(formatter.Detailed())
+}
+
+// commandNlst responds to the NLST FTP command. It allows the client to
+// retreive a list of filenames in the current directory.
+type commandNlst struct{}
+
+func (cmd commandNlst) RequireParam() bool {
+	return false
+}
+
+func (cmd commandNlst) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandNlst) Execute(conn *ftpConn, param string) {
+	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
+	path := conn.buildPath(param)
+	files := conn.driver.DirContents(path)
+	formatter := newListFormatter(files)
+	conn.sendOutofbandData(formatter.Short())
 }
 
 // commandMkd responds to the MKD FTP command. It allows the client to create

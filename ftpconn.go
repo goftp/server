@@ -82,10 +82,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		return
 	}
 	switch command {
-	case "LIST":
-		ftpConn.cmdList(param)
-	case "NLST":
-		ftpConn.cmdNlst(param)
 	case "PASS":
 		ftpConn.cmdPass(param)
 	case "QUIT":
@@ -107,26 +103,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 	default:
 		ftpConn.writeMessage(500, "Command not found")
 	}
-}
-
-// cmdList responds to the LIST FTP command. It allows the client to retreive
-// a detailed listing of the contents of a directory.
-func (ftpConn *ftpConn) cmdList(param string) {
-	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
-	path := ftpConn.buildPath(param)
-	files := ftpConn.driver.DirContents(path)
-	formatter := newListFormatter(files)
-	ftpConn.sendOutofbandData(formatter.Detailed())
-}
-
-// cmdNlst responds to the NLST FTP command. It allows the client to retreive
-// a list of filenames in the current directory.
-func (ftpConn *ftpConn) cmdNlst(param string) {
-	ftpConn.writeMessage(150, "Opening ASCII mode data connection for file list")
-	path := ftpConn.buildPath(param)
-	files := ftpConn.driver.DirContents(path)
-	formatter := newListFormatter(files)
-	ftpConn.sendOutofbandData(formatter.Short())
 }
 
 // cmdPass respond to the PASS FTP command by asking the driver if the supplied
