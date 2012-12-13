@@ -31,7 +31,7 @@ func (ftpServer *FTPServer) ListenAndServe() (err error) {
 		log.Fatal(err)
 	}
 	for {
-		ftpConn, err := ftpServer.Accept(listener)
+		ftpConn, err := ftpServer.accept(listener)
 		if err != nil {
 			break
 		}
@@ -40,7 +40,7 @@ func (ftpServer *FTPServer) ListenAndServe() (err error) {
 	return
 }
 
-func (ftpServer *FTPServer) Accept(listener *net.TCPListener) (ftpConn *ftpConn, err error) {
+func (ftpServer *FTPServer) accept(listener *net.TCPListener) (ftpConn *ftpConn, err error) {
 	tcpConn, err := listener.AcceptTCP()
 	if err == nil {
 		ftpConn = newftpConn(tcpConn, ftpServer.driverFactory.NewDriver())
