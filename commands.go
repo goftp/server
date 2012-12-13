@@ -36,6 +36,7 @@ var (
 		"RMD":  commandRmd{},
 		"SIZE": commandSize{},
 		"STOR": commandStor{},
+		"STRU": commandStru{},
 		"SYST": commandSyst{},
 		"TYPE": commandType{},
 		"USER": commandUser{},
@@ -500,6 +501,33 @@ func (cmd commandStor) Execute(conn *ftpConn, param string) {
 		conn.writeMessage(226, msg)
 	} else {
 		conn.writeMessage(550, "Action not taken")
+	}
+}
+
+// commandStru responds to the STRU FTP command.
+//
+// like the MODE and TYPE commands, stru[cture] dates back to a time when the
+// FTP protocol was more aware of the content of the files it was transferring,
+// and would sometimes be expected to translate things like EOL markers on the
+// fly.
+//
+// These days files are sent unmodified, and F(ile) mode is the only one we
+// really need to support.
+type commandStru struct{}
+
+func (cmd commandStru) RequireParam() bool {
+	return false
+}
+
+func (cmd commandStru) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandStru) Execute(conn *ftpConn, param string) {
+	if strings.ToUpper(param) == "F" {
+		conn.writeMessage(200, "OK")
+	} else {
+		conn.writeMessage(504, "STRU is an obsolete command")
 	}
 }
 

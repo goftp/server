@@ -86,8 +86,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		ftpConn.cmdRnfr(param)
 	case "RNTO":
 		ftpConn.cmdRnto(param)
-	case "STRU":
-		ftpConn.cmdStru(param)
 	default:
 		ftpConn.writeMessage(500, "Command not found")
 	}
@@ -108,23 +106,6 @@ func (ftpConn *ftpConn) cmdRnto(param string) {
 		ftpConn.writeMessage(250, "File renamed")
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
-	}
-}
-
-// cmdStru responds to the STRU FTP command.
-//
-// like the MODE and TYPE commands, stru[cture] dates back to a time when the
-// FTP protocol was more aware of the content of the files it was transferring,
-// and would sometimes be expected to translate things like EOL markers on the
-// fly.
-//
-// These days files are sent unmodified, and F(ile) mode is the only one we
-// really need to support.
-func (ftpConn *ftpConn) cmdStru(param string) {
-	if strings.ToUpper(param) == "F" {
-		ftpConn.writeMessage(200, "OK")
-	} else {
-		ftpConn.writeMessage(504, "STRU is an obsolete command")
 	}
 }
 
