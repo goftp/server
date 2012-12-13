@@ -35,7 +35,7 @@ func (info *ftpFileInfo) Sys() interface{} {
 	return nil
 }
 
-// NewDirItem creates a new ftpFileInfo that represents a single diretory. Use
+// NewDirItem creates a new os.FileInfo that represents a single diretory. Use
 // this function to build the response to DirContents() in your FTPDriver
 // implementation.
 func NewDirItem(name string) os.FileInfo {
@@ -46,7 +46,7 @@ func NewDirItem(name string) os.FileInfo {
 	return d
 }
 
-// NewFileItem creates a new ftpFileInfo that represents a single file. Use
+// NewFileItem creates a new os.FileInfo that represents a single file. Use
 // this function to build the response to DirContents() in your FTPDriver
 // implementation.
 func NewFileItem(name string, bytes int) os.FileInfo {
