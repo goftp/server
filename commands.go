@@ -93,7 +93,7 @@ func (cmd commandCdup) Execute(conn *ftpConn, param string) {
 type commandCwd struct{}
 
 func (cmd commandCwd) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandCwd) RequireAuth() bool {
@@ -137,7 +137,7 @@ func (cmd commandDele) Execute(conn *ftpConn, param string) {
 type commandEprt struct{}
 
 func (cmd commandEprt) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandEprt) RequireAuth() bool {
@@ -257,7 +257,7 @@ func (cmd commandMkd) Execute(conn *ftpConn, param string) {
 type commandMode struct{}
 
 func (cmd commandMode) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandMode) RequireAuth() bool {
@@ -295,7 +295,7 @@ func (cmd commandNoop) Execute(conn *ftpConn, param string) {
 type commandPass struct{}
 
 func (cmd commandPass) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandPass) RequireAuth() bool {
@@ -349,7 +349,7 @@ func (cmd commandPasv) Execute(conn *ftpConn, param string) {
 type commandPort struct{}
 
 func (cmd commandPort) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandPort) RequireAuth() bool {
@@ -410,7 +410,7 @@ func (cmd commandQuit) Execute(conn *ftpConn, param string) {
 type commandRetr struct{}
 
 func (cmd commandRetr) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRetr) RequireAuth() bool {
@@ -493,7 +493,7 @@ func (cmd commandRmd) Execute(conn *ftpConn, param string) {
 type commandSize struct{}
 
 func (cmd commandSize) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandSize) RequireAuth() bool {
@@ -515,7 +515,7 @@ func (cmd commandSize) Execute(conn *ftpConn, param string) {
 type commandStor struct{}
 
 func (cmd commandStor) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandStor) RequireAuth() bool {
@@ -559,7 +559,7 @@ func (cmd commandStor) Execute(conn *ftpConn, param string) {
 type commandStru struct{}
 
 func (cmd commandStru) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandStru) RequireAuth() bool {
@@ -578,7 +578,7 @@ func (cmd commandStru) Execute(conn *ftpConn, param string) {
 type commandSyst struct{}
 
 func (cmd commandSyst) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandSyst) RequireAuth() bool {
@@ -623,7 +623,7 @@ func (cmd commandType) Execute(conn *ftpConn, param string) {
 type commandUser struct{}
 
 func (cmd commandUser) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandUser) RequireAuth() bool {
