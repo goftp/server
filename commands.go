@@ -31,7 +31,9 @@ var (
 		"PASV": commandPasv{},
 		"PORT": commandPort{},
 		"PWD":  commandPwd{},
+		"QUIT": commandQuit{},
 		"RMD":  commandRmd{},
+		"SIZE": commandSize{},
 		"SYST": commandSyst{},
 		"TYPE": commandType{},
 		"USER": commandUser{},
@@ -379,6 +381,20 @@ func (cmd commandPwd) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(257, "\""+conn.namePrefix+"\" is the current directory")
 }
 
+type commandQuit struct{}
+
+func (cmd commandQuit) RequireParam() bool {
+	return false
+}
+
+func (cmd commandQuit) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandQuit) Execute(conn *ftpConn, param string) {
+	conn.Close()
+}
+
 // cmdRmd responds to the RMD FTP command. It allows the client to delete a
 // directory.
 type commandRmd struct{}
@@ -397,6 +413,28 @@ func (cmd commandRmd) Execute(conn *ftpConn, param string) {
 		conn.writeMessage(250, "Directory deleted")
 	} else {
 		conn.writeMessage(550, "Action not taken")
+	}
+}
+
+// commandSize responds to the SIZE FTP command. It returns the size of the
+// requested path in bytes.
+type commandSize struct{}
+
+func (cmd commandSize) RequireParam() bool {
+	return false
+}
+
+func (cmd commandSize) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandSize) Execute(conn *ftpConn, param string) {
+	path  := conn.buildPath(param)
+	bytes := conn.driver.Bytes(path)
+	if bytes >= 0 {
+		conn.writeMessage(213, strconv.Itoa(bytes))
+	} else {
+		conn.writeMessage(450, "file not available")
 	}
 }
 

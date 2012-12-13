@@ -82,16 +82,12 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		return
 	}
 	switch command {
-	case "QUIT":
-		ftpConn.Close()
 	case "RETR":
 		ftpConn.cmdRetr(param)
 	case "RNFR":
 		ftpConn.cmdRnfr(param)
 	case "RNTO":
 		ftpConn.cmdRnto(param)
-	case "SIZE":
-		ftpConn.cmdSize(param)
 	case "STOR":
 		ftpConn.cmdStor(param)
 	case "STRU":
@@ -130,18 +126,6 @@ func (ftpConn *ftpConn) cmdRnto(param string) {
 		ftpConn.writeMessage(250, "File renamed")
 	} else {
 		ftpConn.writeMessage(550, "Action not taken")
-	}
-}
-
-// cmdSize responds to the SIZE FTP command. It returns the size of the
-// requested path in bytes.
-func (ftpConn *ftpConn) cmdSize(param string) {
-	path := ftpConn.buildPath(param)
-	bytes := ftpConn.driver.Bytes(path)
-	if bytes >= 0 {
-		ftpConn.writeMessage(213, strconv.Itoa(bytes))
-	} else {
-		ftpConn.writeMessage(450, "file not available")
 	}
 }
 
