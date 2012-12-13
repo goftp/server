@@ -78,7 +78,13 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		ftpConn.writeMessage(500, "Command not found")
 		return
 	}
-	cmdObj.Execute(ftpConn, param)
+	if cmdObj.RequireParam() && param == "" {
+		ftpConn.writeMessage(553, "action aborted, required param missing")
+	} else if cmdObj.RequireAuth() && ftpConn.user == "" {
+		ftpConn.writeMessage(530, "not logged in")
+	} else {
+		cmdObj.Execute(ftpConn, param)
+	}
 }
 
 func (ftpConn *ftpConn) parseLine(line string) (string, string) {
@@ -86,7 +92,7 @@ func (ftpConn *ftpConn) parseLine(line string) (string, string) {
 	if len(params) == 1 {
 		return params[0], ""
 	}
-	return params[0], params[1]
+	return params[0], strings.TrimSpace(params[1])
 }
 
 // writeMessage will send a standard FTP response back to the client.
