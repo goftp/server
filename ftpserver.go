@@ -14,17 +14,47 @@ import (
 	"strings"
 )
 
+// serverOpts contains parameters for graval.NewFTPServer()
+type FTPServerOpts struct {
+	Hostname  string
+	Port      int
+	Factory   FTPDriverFactory
+}
+
 type FTPServer struct {
 	name          string
 	listenTo      string
 	driverFactory FTPDriverFactory
 }
 
-func NewFTPServer(hostname string, port int, factory FTPDriverFactory) *FTPServer {
+// serverOptsWithDefaults copies an FTPServerOpts struct into a new struct,
+// then adds any default values that are missing and returns the new data.
+func serverOptsWithDefaults(opts *FTPServerOpts) *FTPServerOpts {
+	var newOpts FTPServerOpts
+	if opts == nil {
+		opts = &FTPServerOpts{}
+	}
+	if opts.Hostname == "" {
+		newOpts.Hostname = "::"
+	} else {
+		newOpts.Hostname = opts.Hostname
+	}
+	if opts.Port == 0 {
+		newOpts.Port = 3000
+	} else {
+		newOpts.Port = opts.Port
+	}
+	newOpts.Factory = opts.Factory
+
+	return &newOpts
+}
+
+func NewFTPServer(opts *FTPServerOpts) *FTPServer {
+	opts = serverOptsWithDefaults(opts)
 	s := new(FTPServer)
-	s.listenTo = buildTcpString(hostname, port)
+	s.listenTo = buildTcpString(opts.Hostname, opts.Port)
 	s.name = "Go FTP Server"
-	s.driverFactory = factory
+	s.driverFactory = opts.Factory
 	return s
 }
 

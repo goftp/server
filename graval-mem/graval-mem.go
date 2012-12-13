@@ -97,7 +97,7 @@ func (factory *MemDriverFactory) NewDriver() graval.FTPDriver {
 // it's alive!
 func main() {
 	factory := &MemDriverFactory{}
-	ftpServer := graval.NewFTPServer("::", 3000, factory)
+	ftpServer := graval.NewFTPServer(&graval.FTPServerOpts{ Factory: factory })
 	err := ftpServer.ListenAndServe()
 	if err != nil {
 		log.Fatal("Error starting server!")
