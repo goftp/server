@@ -1,3 +1,11 @@
+// An experimental FTP server framework. By providing a simple driver class that
+// responds to a handful of methods you can have a complete FTP server.
+//
+// Some sample use cases include persisting data to an Amazon S3 bucket, a
+// relational database, redis or memory.
+//
+// There is a sample in-memory driver available - see the documentation for the
+// graval-mem package or the graval READEME for more details.
 package graval
 
 import (

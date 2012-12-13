@@ -6,10 +6,15 @@ import (
 	"time"
 )
 
+// For each client that connects to the server, a new FTPDriver is required.
+// Create an implementation if this interface and provide it to FTPServer.
 type FTPDriverFactory interface {
 	NewDriver() FTPDriver
 }
 
+// You will create an implementation of this interface that speaks to your
+// chosen persistence layer. graval will create a new instance of your
+// driver for each client that connects and delegate to it as required.
 type FTPDriver interface {
 	// params  - username, password
 	// returns - true if the provided details are valid
