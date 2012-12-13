@@ -82,8 +82,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		return
 	}
 	switch command {
-	case "EPRT":
-		ftpConn.cmdEprt(param)
 	case "EPSV":
 		ftpConn.cmdEpsv(param)
 	case "LIST":
@@ -96,8 +94,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 		ftpConn.cmdPass(param)
 	case "PASV":
 		ftpConn.cmdPasv(param)
-	case "PORT":
-		ftpConn.cmdPort(param)
 	case "PWD", "XPWD":
 		ftpConn.cmdPwd()
 	case "QUIT":
@@ -119,28 +115,6 @@ func (ftpConn *ftpConn) receiveLine(line string) {
 	default:
 		ftpConn.writeMessage(500, "Command not found")
 	}
-}
-
-// cmdEprt responds to the EPRT FTP command. It allows the client to request an
-// active data socket with more options than the original PORT command. It
-// mainly adds ipv6 support, although we don't support that yet.
-func (ftpConn *ftpConn) cmdEprt(param string) {
-	delim := string(param[0:1])
-	parts := strings.Split(param, delim)
-	addressFamily, err := strconv.Atoi(parts[1])
-	host := parts[2]
-	port, err := strconv.Atoi(parts[3])
-	if addressFamily != 1 && addressFamily != 2 {
-		ftpConn.writeMessage(522, "Network protocol not supported, use (1,2)")
-		return
-	}
-	socket, err := newActiveSocket(host, port)
-	if err != nil {
-		ftpConn.writeMessage(425, "Data connection failed")
-		return
-	}
-	ftpConn.dataConn = socket
-	ftpConn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
 }
 
 // cmdEpsv responds to the EPSV FTP command. It allows the client to request a
@@ -218,25 +192,6 @@ func (ftpConn *ftpConn) cmdPasv(param string) {
 	target := fmt.Sprintf("(%s,%s,%s,%s,%d,%d)", quads[0], quads[1], quads[2], quads[3], p1, p2)
 	msg := "Entering Passive Mode "+target
 	ftpConn.writeMessage(227, msg)
-}
-
-// cmdPort responds to the PORT FTP command.
-//
-// The client has opened a listening socket for sending out of band data and
-// is requesting that we connect to it
-func (ftpConn *ftpConn) cmdPort(param string) {
-	nums := strings.Split(param, ",")
-	portOne, _ := strconv.Atoi(nums[4])
-	portTwo, _ := strconv.Atoi(nums[5])
-	port := (portOne * 256) + portTwo
-	host := nums[0] + "." + nums[1] + "." + nums[2] + "." + nums[3]
-	socket, err := newActiveSocket(host, port)
-	if err != nil {
-		ftpConn.writeMessage(425, "Data connection failed")
-		return
-	}
-	ftpConn.dataConn = socket
-	ftpConn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
 }
 
 // cmdPwd responds to the PWD FTP command.

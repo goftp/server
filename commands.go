@@ -1,6 +1,7 @@
 package graval
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -18,8 +19,10 @@ var (
 		"CDUP": commandCdup{},
 		"CWD":  commandCwd{},
 		"DELE": commandDele{},
+		"EPRT": commandEprt{},
 		"MODE": commandMode{},
 		"NOOP": commandNoop{},
+		"PORT": commandPort{},
 		"RMD":  commandRmd{},
 		"SYST": commandSyst{},
 		"TYPE": commandType{},
@@ -108,6 +111,38 @@ func (cmd commandDele) Execute(conn *ftpConn, param string) {
 	}
 }
 
+// commandEprt responds to the EPRT FTP command. It allows the client to
+// request an active data socket with more options than the original PORT
+// command. It mainly adds ipv6 support.
+type commandEprt struct{}
+
+func (cmd commandEprt) RequireParam() bool {
+	return false
+}
+
+func (cmd commandEprt) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandEprt) Execute(conn *ftpConn, param string) {
+	delim := string(param[0:1])
+	parts := strings.Split(param, delim)
+	addressFamily, err := strconv.Atoi(parts[1])
+	host := parts[2]
+	port, err := strconv.Atoi(parts[3])
+	if addressFamily != 1 && addressFamily != 2 {
+		conn.writeMessage(522, "Network protocol not supported, use (1,2)")
+		return
+	}
+	socket, err := newActiveSocket(host, port)
+	if err != nil {
+		conn.writeMessage(425, "Data connection failed")
+		return
+	}
+	conn.dataConn = socket
+	conn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
+}
+
 // cmdMode responds to the MODE FTP command.
 //
 // the original FTP spec had various options for hosts to negotiate how data
@@ -148,6 +183,35 @@ func (cmd commandNoop) RequireAuth() bool {
 
 func (cmd commandNoop) Execute(conn *ftpConn, param string) {
 	conn.writeMessage(200, "OK")
+}
+
+// commandPort responds to the PORT FTP command.
+//
+// The client has opened a listening socket for sending out of band data and
+// is requesting that we connect to it
+type commandPort struct{}
+
+func (cmd commandPort) RequireParam() bool {
+	return false
+}
+
+func (cmd commandPort) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandPort) Execute(conn *ftpConn, param string) {
+	nums := strings.Split(param, ",")
+	portOne, _ := strconv.Atoi(nums[4])
+	portTwo, _ := strconv.Atoi(nums[5])
+	port := (portOne * 256) + portTwo
+	host := nums[0] + "." + nums[1] + "." + nums[2] + "." + nums[3]
+	socket, err := newActiveSocket(host, port)
+	if err != nil {
+		conn.writeMessage(425, "Data connection failed")
+		return
+	}
+	conn.dataConn = socket
+	conn.writeMessage(200, "Connection established ("+strconv.Itoa(port)+")")
 }
 
 // cmdRmd responds to the RMD FTP command. It allows the client to delete a
