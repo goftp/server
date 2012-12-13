@@ -126,10 +126,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdStor(param)
 	case "STRU":
 		ftpConn.cmdStru(param)
-	case "SYST":
-		ftpConn.cmdSyst()
-	case "TYPE":
-		ftpConn.cmdType(param)
 	case "USER":
 		ftpConn.cmdUser(param)
 	default:
@@ -410,31 +406,6 @@ func (ftpConn *FTPConn) cmdStru(param string) {
 		ftpConn.writeMessage(200, "OK")
 	} else {
 		ftpConn.writeMessage(504, "STRU is an obsolete command")
-	}
-}
-
-// cmdSyst responds to the SYST FTP command by providing a canned response.
-func (ftpConn *FTPConn) cmdSyst() {
-	ftpConn.writeMessage(215, "UNIX Type: L8")
-}
-
-// cmdType responds to the TYPE FTP command.
-//
-//  like the MODE and STRU commands, TYPE dates back to a time when the FTP
-//  protocol was more aware of the content of the files it was transferring, and
-//  would sometimes be expected to translate things like EOL markers on the fly.
-//
-//  Valid options were A(SCII), I(mage), E(BCDIC) or LN (for local type). Since
-//  we plan to just accept bytes from the client unchanged, I think Image mode is
-//  adequate. The RFC requires we accept ASCII mode however, so accept it, but
-//  ignore it.
-func (ftpConn *FTPConn) cmdType(param string) {
-	if strings.ToUpper(param) == "A" {
-		ftpConn.writeMessage(200, "Type set to ASCII")
-	} else if strings.ToUpper(param) == "I" {
-		ftpConn.writeMessage(200, "Type set to binary")
-	} else {
-		ftpConn.writeMessage(500, "Invalid type")
 	}
 }
 
