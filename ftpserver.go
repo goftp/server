@@ -21,7 +21,7 @@ func NewFTPServer(hostname string, port int, factory FTPDriverFactory) *FTPServe
 	return s
 }
 
-func (ftpServer *FTPServer) Listen() (err error) {
+func (ftpServer *FTPServer) ListenAndServe() (err error) {
 	laddr, err := net.ResolveTCPAddr("tcp", ftpServer.listenTo)
 	if err != nil {
 		log.Fatal(err)
