@@ -15,8 +15,12 @@ type commandMap map[string]ftpCommand
 var (
 	commands = commandMap{
 		"ALLO": commandAllo{},
+		"CDUP": commandCdup{},
+		"CWD":  commandCwd{},
 		"SYST": commandSyst{},
 		"TYPE": commandType{},
+		"XCUP": commandCdup{},
+		"XCWD": commandCwd{},
 	}
 )
 
@@ -36,6 +40,46 @@ func (cmd commandAllo) RequireAuth() bool {
 
 func (cmd commandAllo) Execute(conn *FTPConn, param string) {
 	conn.writeMessage(202, "Obsolete")
+}
+
+// cmdCdup responds to the CDUP FTP command.
+//
+// Allows the client change their current directory to the parent.
+type commandCdup struct{}
+
+func (cmd commandCdup) RequireParam() bool {
+	return false
+}
+
+func (cmd commandCdup) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandCdup) Execute(conn *FTPConn, param string) {
+	otherCmd := &commandCwd{}
+	otherCmd.Execute(conn, "..")
+}
+
+// commandCwd responds to the CWD FTP command. It allows the client to change the
+// current working directory.
+type commandCwd struct{}
+
+func (cmd commandCwd) RequireParam() bool {
+	return false
+}
+
+func (cmd commandCwd) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandCwd) Execute(conn *FTPConn, param string) {
+	path := conn.buildPath(param)
+	if conn.driver.ChangeDir(path) {
+		conn.namePrefix = path
+		conn.writeMessage(250, "Directory changed to "+path)
+	} else {
+		conn.writeMessage(550, "Action not taken")
+	}
 }
 
 // commandSyst responds to the SYST FTP command by providing a canned response.

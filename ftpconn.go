@@ -82,10 +82,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		return
 	}
 	switch command {
-	case "CDUP", "XCUP":
-		ftpConn.cmdCdup()
-	case "CWD", "XCWD":
-		ftpConn.cmdCwd(param)
 	case "DELE":
 		ftpConn.cmdDele(param)
 	case "EPRT":
@@ -130,25 +126,6 @@ func (ftpConn *FTPConn) receiveLine(line string) {
 		ftpConn.cmdUser(param)
 	default:
 		ftpConn.writeMessage(500, "Command not found")
-	}
-}
-
-// cmdCdup responds to the CDUP FTP command.
-//
-// Allows the client change their current directory to the parent.
-func (ftpConn *FTPConn) cmdCdup() {
-	ftpConn.cmdCwd("..")
-}
-
-// cmdCwd responds to the CWD FTP command. It allows the client to change the
-// current working directory.
-func (ftpConn *FTPConn) cmdCwd(param string) {
-	path := ftpConn.buildPath(param)
-	if ftpConn.driver.ChangeDir(path) {
-		ftpConn.namePrefix = path
-		ftpConn.writeMessage(250, "Directory changed to "+path)
-	} else {
-		ftpConn.writeMessage(550, "Action not taken")
 	}
 }
 
