@@ -114,12 +114,17 @@ func (ftpServer *FTPServer) ListenAndServe() error {
 	return nil
 }
 
-func (ftpServer *FTPServer) accept(listener *net.TCPListener) (ftpConn *ftpConn, err error) {
+func (ftpServer *FTPServer) accept(listener *net.TCPListener) (*ftpConn, error) {
 	tcpConn, err := listener.AcceptTCP()
-	if err == nil {
-		ftpConn = newftpConn(tcpConn, ftpServer.driverFactory.NewDriver())
+	if err != nil {
+		return nil, err
 	}
-	return
+	driver, err := ftpServer.driverFactory.NewDriver()
+	if err != nil {
+		return nil, err
+	}
+	ftpConn := newftpConn(tcpConn, driver)
+	return ftpConn, nil
 }
 
 func buildTcpString(hostname string, port int) (result string) {

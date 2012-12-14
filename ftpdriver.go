@@ -9,7 +9,7 @@ import (
 // For each client that connects to the server, a new FTPDriver is required.
 // Create an implementation if this interface and provide it to FTPServer.
 type FTPDriverFactory interface {
-	NewDriver() FTPDriver
+	NewDriver() (FTPDriver, error)
 }
 
 // You will create an implementation of this interface that speaks to your
