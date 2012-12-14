@@ -90,8 +90,8 @@ func (driver *MemDriver) PutFile(destPath string, data io.Reader) bool {
 // a good place to read any required config for your driver.
 type MemDriverFactory struct{}
 
-func (factory *MemDriverFactory) NewDriver() graval.FTPDriver {
-	return &MemDriver{}
+func (factory *MemDriverFactory) NewDriver() (graval.FTPDriver, error) {
+	return &MemDriver{}, nil
 }
 
 // it's alive!
