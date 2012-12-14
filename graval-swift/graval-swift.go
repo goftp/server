@@ -12,6 +12,7 @@ import (
 	"github.com/ncw/swift"
 	"github.com/yob/graval"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -99,8 +100,17 @@ func (driver *SwiftDriver) GetFile(path string) (data string, err error) {
 	return "", errors.New("foo")
 }
 func (driver *SwiftDriver) PutFile(destPath string, data io.Reader) bool {
+	destPath = scoped_path(driver.user, destPath)
 	log.Printf("PutFile: %s", destPath)
-	return false
+	contents, err := ioutil.ReadAll(data)
+	if err != nil {
+		return false
+	}
+	err = driver.connection.ObjectPutBytes(driver.container, destPath, contents, "application/octet-stream")
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func scoped_path_with_trailing_slash(user string, path string) string {
