@@ -42,8 +42,8 @@ func (driver *MemDriver) Bytes(path string) (bytes int) {
 	}
 	return
 }
-func (driver *MemDriver) ModifiedTime(path string) time.Time {
-	return time.Now()
+func (driver *MemDriver) ModifiedTime(path string) (time.Time, error) {
+	return time.Now(), nil
 }
 func (driver *MemDriver) ChangeDir(path string) bool {
 	return path == "/" || path == "/files"

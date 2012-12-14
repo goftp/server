@@ -27,7 +27,9 @@ type FTPDriver interface {
 
 	// params  - a file path
 	// returns - a time indicating when the requested path was last modified
-	ModifiedTime(string) time.Time
+	//         - an error if the file doesn't exist or the user lacks
+	//           permissions
+	ModifiedTime(string) (time.Time, error)
 
 	// params  - path
 	// returns - true if the current user is permitted to change to the

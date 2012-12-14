@@ -2,6 +2,7 @@ package graval
 
 import (
 	"fmt"
+	"github.com/jehiah/go-strftime"
 	"io"
 	"io/ioutil"
 	"os"
@@ -27,6 +28,7 @@ var (
 		"EPSV": commandEpsv{},
 		"LIST": commandList{},
 		"NLST": commandNlst{},
+		"MDTM": commandMdtm{},
 		"MKD":  commandMkd{},
 		"MODE": commandMode{},
 		"NOOP": commandNoop{},
@@ -225,6 +227,28 @@ func (cmd commandNlst) Execute(conn *ftpConn, param string) {
 	files := conn.driver.DirContents(path)
 	formatter := newListFormatter(files)
 	conn.sendOutofbandData(formatter.Short())
+}
+
+// commandMdtm responds to the MDTM FTP command. It allows the client to
+// retreive the last modified time of a file.
+type commandMdtm struct{}
+
+func (cmd commandMdtm) RequireParam() bool {
+	return true
+}
+
+func (cmd commandMdtm) RequireAuth() bool {
+	return true
+}
+
+func (cmd commandMdtm) Execute(conn *ftpConn, param string) {
+	path := conn.buildPath(param)
+	time, err := conn.driver.ModifiedTime(path)
+	if err == nil {
+		conn.writeMessage(213, strftime.Format("%Y%m%d%H%M%S", time))
+	} else {
+		conn.writeMessage(450, "File not available")
+	}
 }
 
 // commandMkd responds to the MKD FTP command. It allows the client to create
