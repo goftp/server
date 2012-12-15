@@ -172,7 +172,10 @@ type SwiftDriverFactory struct{}
 
 func (factory *SwiftDriverFactory) NewDriver() (graval.FTPDriver, error) {
 	driver := &SwiftDriver{}
-	driver.container  = "rba-uploads"
+	driver.container  = os.Getenv("Container")
+	if driver.container == "" {
+		return nil, errors.New("Container env variable not set")
+	}
 	driver.connection = &swift.Connection{
 		UserName: os.Getenv("UserName"),
 		ApiKey:   os.Getenv("ApiKey"),
