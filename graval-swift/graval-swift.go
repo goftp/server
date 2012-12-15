@@ -83,10 +83,17 @@ func (driver *SwiftDriver) DeleteDir(path string) bool {
 	return false
 }
 func (driver *SwiftDriver) DeleteFile(path string) bool {
+	path = scoped_path(driver.user, path)
 	log.Printf("DeleteFile: %s", path)
-	return false
+	err := driver.connection.ObjectDelete(driver.container, path)
+	if err != nil {
+		return false
+	}
+	return true
 }
 func (driver *SwiftDriver) Rename(fromPath string, toPath string) bool {
+	fromPath = scoped_path(driver.user, fromPath)
+	toPath   = scoped_path(driver.user, toPath)
 	log.Printf("Rename: %s %s", fromPath, toPath)
 	return false
 }
