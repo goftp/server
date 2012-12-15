@@ -55,8 +55,16 @@ func (driver *SwiftDriver) ModifiedTime(path string) (time.Time, error) {
 	return object.LastModified, nil
 }
 func (driver *SwiftDriver) ChangeDir(path string) bool {
+	path = scoped_path(driver.user, path)
+	if path == ("/"+driver.user) {
+		return true
+	}
 	log.Printf("ChangeDir: %s", path)
-	return false
+	object, _, err := driver.connection.Object(driver.container, path)
+	if err != nil {
+		return false
+	}
+	return object.ContentType == "application/directory"
 }
 func (driver *SwiftDriver) DirContents(path string) (files []os.FileInfo) {
 	path = scoped_path_with_trailing_slash(driver.user, path)
@@ -79,7 +87,7 @@ func (driver *SwiftDriver) DirContents(path string) (files []os.FileInfo) {
 }
 
 func (driver *SwiftDriver) DeleteDir(path string) bool {
-	path = scoped_path_with_trailing_slash(driver.user, path)
+	path = scoped_path(driver.user, path)
 	log.Printf("DeleteDir: %s", path)
 	err := driver.connection.ObjectDelete(driver.container, path)
 	if err != nil {
@@ -103,7 +111,7 @@ func (driver *SwiftDriver) Rename(fromPath string, toPath string) bool {
 	return false
 }
 func (driver *SwiftDriver) MakeDir(path string) bool {
-	path = scoped_path_with_trailing_slash(driver.user, path)
+	path = scoped_path(driver.user, path)
 	log.Printf("MakeDir: %s", path)
 	opts    := &swift.ObjectsOpts{Prefix:path}
 	objects, err := driver.connection.ObjectNames(driver.container, opts)
