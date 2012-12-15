@@ -5,6 +5,17 @@
 // If you're looking to create a custom graval driver, this example is a
 // reasonable starting point. I suggest copying this file and changing the
 // function bodies as required.
+//
+// USAGE:
+//
+//    go get github.com/yob/graval
+//    go install github.com/yob/graval/graval-swift
+//    export UserName=myusername
+//    export ApiKey=myapikey
+//    export AuthUrl="https://auth.api.rackspacecloud.com/v1.0"
+//    export Container=my-container
+//    ./bin/graval-swift
+//
 package main
 
 import (

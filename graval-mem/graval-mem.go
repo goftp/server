@@ -4,6 +4,13 @@
 // If you're looking to create a custom graval driver, this example is a
 // reasonable starting point. I suggest copying this file and changing the
 // function bodies as required.
+//
+// USAGE:
+//
+//    go get github.com/yob/graval
+//    go install github.com/yob/graval/graval-mem
+//    ./bin/graval-mem
+//
 package main
 
 import (
