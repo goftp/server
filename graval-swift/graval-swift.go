@@ -37,13 +37,22 @@ func (driver *SwiftDriver) Authenticate(user string, pass string) bool {
 	return true
 }
 func (driver *SwiftDriver) Bytes(path string) (bytes int) {
+	path = scoped_path(driver.user, path)
 	log.Printf("Bytes: %s", path)
-	bytes = -1
-	return
+	object, _, err := driver.connection.Object(driver.container, path)
+	if err != nil {
+		return -1
+	}
+	return int(object.Bytes)
 }
 func (driver *SwiftDriver) ModifiedTime(path string) (time.Time, error) {
+	path = scoped_path(driver.user, path)
 	log.Printf("ModifiedTime: %s", path)
-	return time.Now(), nil
+	object, _, err := driver.connection.Object(driver.container, path)
+	if err != nil {
+		return time.Now(), err
+	}
+	return object.LastModified, nil
 }
 func (driver *SwiftDriver) ChangeDir(path string) bool {
 	log.Printf("ChangeDir: %s", path)
@@ -96,8 +105,13 @@ func (driver *SwiftDriver) MakeDir(path string) bool {
 	return true
 }
 func (driver *SwiftDriver) GetFile(path string) (data string, err error) {
-	log.Printf("GetFile: %d", len(data))
-	return "", errors.New("foo")
+	path = scoped_path(driver.user, path)
+	log.Printf("GetFile: %s", path)
+	data, err = driver.connection.ObjectGetString(driver.container, path)
+	if err != nil {
+		return "", errors.New("foo")
+	}
+	return
 }
 func (driver *SwiftDriver) PutFile(destPath string, data io.Reader) bool {
 	destPath = scoped_path(driver.user, destPath)
