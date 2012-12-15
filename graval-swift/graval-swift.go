@@ -79,8 +79,13 @@ func (driver *SwiftDriver) DirContents(path string) (files []os.FileInfo) {
 }
 
 func (driver *SwiftDriver) DeleteDir(path string) bool {
+	path = scoped_path_with_trailing_slash(driver.user, path)
 	log.Printf("DeleteDir: %s", path)
-	return false
+	err := driver.connection.ObjectDelete(driver.container, path)
+	if err != nil {
+		return false
+	}
+	return true
 }
 func (driver *SwiftDriver) DeleteFile(path string) bool {
 	path = scoped_path(driver.user, path)
