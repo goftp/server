@@ -69,17 +69,17 @@ func (driver *SwiftDriver) ChangeDir(path string) bool {
 func (driver *SwiftDriver) DirContents(path string) (files []os.FileInfo) {
 	path = scoped_path_with_trailing_slash(driver.user, path)
 	log.Printf("DirContents: %s", path)
-	opts    := &swift.ObjectsOpts{Prefix:path}
+	opts    := &swift.ObjectsOpts{Prefix:path, Delimiter:'/'}
 	objects, err := driver.connection.ObjectsAll(driver.container, opts)
 	if err != nil {
 		return // error connecting to cloud files
 	}
 	for _, object := range objects {
-		tail  := strings.Replace(object.Name, path, "", 1)
+		tail     := strings.Replace(object.Name, path, "", 1)
         basename := strings.Split(tail, "/")[0]
-		if object.ContentType == "application/directory" {
+		if object.ContentType == "application/directory" && object.SubDir == "" {
 			files = append(files, graval.NewDirItem(basename))
-		} else  {
+		} else if object.ContentType != "application/directory"  {
 			files = append(files, graval.NewFileItem(basename, int(object.Bytes)))
 		}
 	}
