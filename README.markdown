@@ -13,7 +13,7 @@ Some sample use cases include persisting data to:
 There is a sample in-memory driver available - see the usage instructions below
 for the steps to use it.
 
-Full documentation for th package is available on [http://godoc.org/github.com/yob/graval](godoc)
+Full documentation for the package is available on [godoc](http://godoc.org/github.com/yob/graval)
 
 ## Installation
 
@@ -43,7 +43,7 @@ details:
 ### The Driver Contract
 
 Your driver MUST implement a number of simple methods. You can view the required
-contract in the package docs on [http://godoc.org/github.com/yob/graval](godoc)
+contract in the package docs on [godoc](http://godoc.org/github.com/yob/graval)
 
 ## Contributors
 
