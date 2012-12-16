@@ -13,6 +13,8 @@ Some sample use cases include persisting data to:
 There is a sample in-memory driver available - see the usage instructions below
 for the steps to use it.
 
+Full documentation for th package is available on [http://godoc.org/github.com/yob/graval](godoc)
+
 ## Installation
 
     go get github.com/yob/graval
@@ -40,11 +42,8 @@ details:
 
 ### The Driver Contract
 
-Your driver MUST have the following methods.  Each method MUST accept the listed
-parameters and return an appropriate value:
-
-    authenticate(user, pass)
-    - boolean indicating if the provided details are valid
+Your driver MUST implement a number of simple methods. You can view the required
+contract in the package docs on [http://godoc.org/github.com/yob/graval](godoc)
 
 ## Contributors
 
