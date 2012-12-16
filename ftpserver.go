@@ -9,6 +9,7 @@
 package graval
 
 import (
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -105,26 +106,20 @@ func (ftpServer *FTPServer) ListenAndServe() error {
 		return err
 	}
 	for {
-		ftpConn, err := ftpServer.accept(listener)
+		tcpConn, err := listener.AcceptTCP()
 		if err != nil {
+			log.Print("listening error")
 			break
 		}
-		go ftpConn.Serve()
+		driver, err := ftpServer.driverFactory.NewDriver()
+		if err != nil {
+			log.Print("Error creating driver, aborting client connection")
+		} else {
+			ftpConn := newftpConn(tcpConn, driver)
+			go ftpConn.Serve()
+		}
 	}
 	return nil
-}
-
-func (ftpServer *FTPServer) accept(listener *net.TCPListener) (*ftpConn, error) {
-	tcpConn, err := listener.AcceptTCP()
-	if err != nil {
-		return nil, err
-	}
-	driver, err := ftpServer.driverFactory.NewDriver()
-	if err != nil {
-		return nil, err
-	}
-	ftpConn := newftpConn(tcpConn, driver)
-	return ftpConn, nil
 }
 
 func buildTcpString(hostname string, port int) (result string) {
