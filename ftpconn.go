@@ -28,7 +28,7 @@ type ftpConn struct {
 
 // NewftpConn constructs a new object that will handle the FTP protocol over
 // an active net.TCPConn. The TCP connection should already be open before
-// it is handed to this functions. driver is an instance of FTPDrive that
+// it is handed to this functions. driver is an instance of FTPDriver that
 // will handle all auth and persistence details.
 func newftpConn(tcpConn *net.TCPConn, driver FTPDriver) *ftpConn {
 	c := new(ftpConn)
@@ -105,7 +105,7 @@ func (ftpConn *ftpConn) writeMessage(code int, message string) (wrote int, err e
 }
 
 // buildPath takes a client supplied path or filename and generates a safe
-// absolute path withing their account sandbox.
+// absolute path within their account sandbox.
 //
 //    buildpath("/")
 //    => "/"
