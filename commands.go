@@ -156,7 +156,7 @@ func (cmd commandEprt) Execute(conn *ftpConn, param string) {
 		conn.writeMessage(522, "Network protocol not supported, use (1,2)")
 		return
 	}
-	socket, err := newActiveSocket(host, port)
+	socket, err := newActiveSocket(host, port, conn.logger)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -179,7 +179,7 @@ func (cmd commandEpsv) RequireAuth() bool {
 }
 
 func (cmd commandEpsv) Execute(conn *ftpConn, param string) {
-	socket, err := newPassiveSocket()
+	socket, err := newPassiveSocket(conn.logger)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -351,7 +351,7 @@ func (cmd commandPasv) RequireAuth() bool {
 }
 
 func (cmd commandPasv) Execute(conn *ftpConn, param string) {
-	socket, err := newPassiveSocket()
+	socket, err := newPassiveSocket(conn.logger)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -386,7 +386,7 @@ func (cmd commandPort) Execute(conn *ftpConn, param string) {
 	portTwo, _ := strconv.Atoi(nums[5])
 	port := (portOne * 256) + portTwo
 	host := nums[0] + "." + nums[1] + "." + nums[2] + "." + nums[3]
-	socket, err := newActiveSocket(host, port)
+	socket, err := newActiveSocket(host, port, conn.logger)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return

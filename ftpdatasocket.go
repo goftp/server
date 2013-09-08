@@ -2,7 +2,6 @@ package graval
 
 import (
 	"errors"
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -30,25 +29,27 @@ type ftpActiveSocket struct {
 	conn *net.TCPConn
 	host string
 	port int
+	logger *ftpLogger
 }
 
-func newActiveSocket(host string, port int) (ftpDataSocket, error) {
+func newActiveSocket(host string, port int, logger *ftpLogger) (ftpDataSocket, error) {
 	connectTo := buildTcpString(host, port)
-	log.Print("Opening active data connection to " + connectTo)
+	logger.Print("Opening active data connection to " + connectTo)
 	raddr, err := net.ResolveTCPAddr("tcp", connectTo)
 	if err != nil {
-		log.Print(err)
+		logger.Print(err)
 		return nil, err
 	}
 	tcpConn, err := net.DialTCP("tcp", nil, raddr)
 	if err != nil {
-		log.Print(err)
+		logger.Print(err)
 		return nil, err
 	}
 	socket := new(ftpActiveSocket)
 	socket.conn = tcpConn
 	socket.host = host
 	socket.port = port
+	socket.logger = logger
 	return socket, nil
 }
 
@@ -78,12 +79,14 @@ type ftpPassiveSocket struct {
 	port     int
 	ingress  chan []byte
 	egress   chan []byte
+	logger   *ftpLogger
 }
 
-func newPassiveSocket() (ftpDataSocket, error) {
+func newPassiveSocket(logger *ftpLogger) (ftpDataSocket, error) {
 	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
+	socket.logger = logger
 	go socket.ListenAndServe()
 	for {
 		if socket.Port() > 0 {
@@ -117,19 +120,19 @@ func (socket *ftpPassiveSocket) Write(p []byte) (n int, err error) {
 }
 
 func (socket *ftpPassiveSocket) Close() error {
-	log.Print("closing passive data socket")
+	socket.logger.Print("closing passive data socket")
 	return socket.conn.Close()
 }
 
 func (socket *ftpPassiveSocket) ListenAndServe() {
 	laddr, err := net.ResolveTCPAddr("tcp", socket.Host()+":0")
 	if err != nil {
-		log.Print(err)
+		socket.logger.Print(err)
 		return
 	}
 	listener, err := net.ListenTCP("tcp", laddr)
 	if err != nil {
-		log.Print(err)
+		socket.logger.Print(err)
 		return
 	}
 	add   := listener.Addr()
@@ -140,7 +143,7 @@ func (socket *ftpPassiveSocket) ListenAndServe() {
 	}
 	tcpConn, err := listener.AcceptTCP()
 	if err != nil {
-		log.Print(err)
+		socket.logger.Print(err)
 		return
 	}
 	socket.conn = tcpConn
@@ -155,7 +158,7 @@ func (socket *ftpPassiveSocket) waitForOpenSocket() bool {
 		if retries > 3 {
 			return false
 		}
-		log.Print("sleeping, socket isn't open")
+		socket.logger.Print("sleeping, socket isn't open")
 		time.Sleep(500 * time.Millisecond)
 		retries += 1
 	}
