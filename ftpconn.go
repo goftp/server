@@ -73,11 +73,7 @@ func (ftpConn *ftpConn) Close() {
 // appropriate response.
 func (ftpConn *ftpConn) receiveLine(line string) {
 	command, param := ftpConn.parseLine(line)
-	if command == "PASS" {
-		ftpConn.logger.Print("PASS ****")
-	} else {
-		ftpConn.logger.Print(line)
-	}
+	ftpConn.logger.PrintCommand(command, param)
 	cmdObj := commands[command]
 	if cmdObj == nil {
 		ftpConn.writeMessage(500, "Command not found")

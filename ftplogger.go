@@ -23,3 +23,12 @@ func (logger *ftpLogger) Print(message string) {
 func (logger *ftpLogger) Printf(format string, v ...interface{}) {
 	logger.Print(fmt.Sprintf(format, v...))
 }
+
+func (logger *ftpLogger) PrintCommand(command string, params string) {
+	if command == "PASS" {
+		logger.Print("PASS ****")
+	} else {
+		logger.Printf("%s %s", command, params)
+	}
+}
+
