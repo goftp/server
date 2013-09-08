@@ -32,3 +32,6 @@ func (logger *ftpLogger) PrintCommand(command string, params string) {
 	}
 }
 
+func (logger *ftpLogger) PrintResponse(code int, message string) {
+	logger.Printf("%d %s", code, message)
+}
