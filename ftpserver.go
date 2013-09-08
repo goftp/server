@@ -10,9 +10,15 @@ package graval
 
 import (
 	"log"
+	"log/syslog"
 	"net"
 	"strconv"
 	"strings"
+)
+
+const (
+	LOG_STDOUT = 0
+	LOG_SYSLOG = 1
 )
 
 // serverOpts contains parameters for graval.NewFTPServer()
@@ -28,6 +34,10 @@ type FTPServerOpts struct {
 	// The port that the FTP should listen on. Optional, defaults to 3000. In
 	// a production environment you will probably want to change this to 21.
 	Port      int
+
+	// The style of logging. Valid options are LOG_STDOUT and LOG_SYSLOG.
+	// Defaults to LOG_STDOUT
+	Logger   int
 }
 
 // FTPServer is the root of your FTP application. You should instantiate one
@@ -38,6 +48,7 @@ type FTPServer struct {
 	name          string
 	listenTo      string
 	driverFactory FTPDriverFactory
+	logger        ftpLogger
 }
 
 // serverOptsWithDefaults copies an FTPServerOpts struct into a new struct,
@@ -58,6 +69,9 @@ func serverOptsWithDefaults(opts *FTPServerOpts) *FTPServerOpts {
 		newOpts.Port = opts.Port
 	}
 	newOpts.Factory = opts.Factory
+	if opts.Logger > 0 {
+		newOpts.Logger = opts.Logger
+	}
 
 	return &newOpts
 }
@@ -85,6 +99,12 @@ func NewFTPServer(opts *FTPServerOpts) *FTPServer {
 	s.listenTo = buildTcpString(opts.Hostname, opts.Port)
 	s.name = "Go FTP Server"
 	s.driverFactory = opts.Factory
+	if opts.Logger == LOG_SYSLOG {
+		s.logger, _ = syslog.New(syslog.LOG_INFO | syslog.LOG_FTP, "graval")
+	} else {
+		s.logger = new(stdoutLogger)
+	}
+
 	return s
 }
 
@@ -108,12 +128,12 @@ func (ftpServer *FTPServer) ListenAndServe() error {
 	for {
 		tcpConn, err := listener.AcceptTCP()
 		if err != nil {
-			log.Print("listening error")
+			ftpServer.logger.Info("listening error")
 			break
 		}
 		driver, err := ftpServer.driverFactory.NewDriver()
 		if err != nil {
-			log.Print("Error creating driver, aborting client connection")
+			ftpServer.logger.Info("Error creating driver, aborting client connection")
 		} else {
 			ftpConn := newftpConn(tcpConn, driver)
 			go ftpConn.Serve()
