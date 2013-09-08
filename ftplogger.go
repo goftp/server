@@ -16,7 +16,7 @@ func newFtpLogger(id string) *ftpLogger {
 	return l
 }
 
-func (logger *ftpLogger) Print(message string) {
+func (logger *ftpLogger) Print(message interface{}) {
 	log.Printf("%s   %s", logger.sessionId, message)
 }
 
