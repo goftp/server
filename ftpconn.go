@@ -2,7 +2,11 @@ package graval
 
 import (
 	"bufio"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"net"
 	"path/filepath"
 	"strconv"
@@ -20,6 +24,7 @@ type ftpConn struct {
 	dataConn      ftpDataSocket
 	driver        FTPDriver
 	logger        *ftpLogger
+	sessionId     string
 	namePrefix    string
 	reqUser       string
 	user          string
@@ -37,8 +42,21 @@ func newftpConn(tcpConn *net.TCPConn, driver FTPDriver) *ftpConn {
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
 	c.driver = driver
-	c.logger = newFtpLogger("foo")
+	c.sessionId = newSessionId()
+	c.logger = newFtpLogger(c.sessionId)
 	return c
+}
+
+// returns a random 20 char string that can be used as a unique session ID
+func newSessionId() string {
+	hash := sha256.New()
+	_, err := io.CopyN(hash, rand.Reader, 50)
+	if err != nil {
+		return "????????????????????"
+	}
+	md := hash.Sum(nil)
+	mdStr := hex.EncodeToString(md)
+	return mdStr[0:20]
 }
 
 // Serve starts an endless loop that reads FTP commands from the client and
