@@ -72,8 +72,12 @@ func (ftpConn *ftpConn) Close() {
 // receiveLine accepts a single line FTP command and co-ordinates an
 // appropriate response.
 func (ftpConn *ftpConn) receiveLine(line string) {
-	ftpConn.logger.Print(line)
 	command, param := ftpConn.parseLine(line)
+	if command == "PASS" {
+		ftpConn.logger.Print("PASS ****")
+	} else {
+		ftpConn.logger.Print(line)
+	}
 	cmdObj := commands[command]
 	if cmdObj == nil {
 		ftpConn.writeMessage(500, "Command not found")
