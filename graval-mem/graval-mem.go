@@ -107,7 +107,7 @@ func main() {
 	ftpServer := graval.NewFTPServer(&graval.FTPServerOpts{ Factory: factory })
 	err := ftpServer.ListenAndServe()
 	if err != nil {
+		log.Print(err)
 		log.Fatal("Error starting server!")
-		log.Fatal(err)
 	}
 }

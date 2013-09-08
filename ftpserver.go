@@ -9,7 +9,6 @@
 package graval
 
 import (
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -38,6 +37,7 @@ type FTPServer struct {
 	name          string
 	listenTo      string
 	driverFactory FTPDriverFactory
+	logger        *ftpLogger
 }
 
 // serverOptsWithDefaults copies an FTPServerOpts struct into a new struct,
@@ -85,6 +85,7 @@ func NewFTPServer(opts *FTPServerOpts) *FTPServer {
 	s.listenTo = buildTcpString(opts.Hostname, opts.Port)
 	s.name = "Go FTP Server"
 	s.driverFactory = opts.Factory
+	s.logger = newFtpLogger("")
 	return s
 }
 
@@ -108,12 +109,12 @@ func (ftpServer *FTPServer) ListenAndServe() error {
 	for {
 		tcpConn, err := listener.AcceptTCP()
 		if err != nil {
-			log.Print("listening error")
+			ftpServer.logger.Print("listening error")
 			break
 		}
 		driver, err := ftpServer.driverFactory.NewDriver()
 		if err != nil {
-			log.Print("Error creating driver, aborting client connection")
+			ftpServer.logger.Print("Error creating driver, aborting client connection")
 		} else {
 			ftpConn := newftpConn(tcpConn, driver)
 			go ftpConn.Serve()
