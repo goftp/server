@@ -17,7 +17,7 @@ func newFtpLogger(id string) *ftpLogger {
 }
 
 func (logger *ftpLogger) Print(message string) {
-	log.Printf("%s - %s", logger.sessionId, message)
+	log.Printf("%s   %s", logger.sessionId, message)
 }
 
 func (logger *ftpLogger) Printf(format string, v ...interface{}) {
@@ -26,12 +26,12 @@ func (logger *ftpLogger) Printf(format string, v ...interface{}) {
 
 func (logger *ftpLogger) PrintCommand(command string, params string) {
 	if command == "PASS" {
-		logger.Print("PASS ****")
+		log.Printf("%s > PASS ****", logger.sessionId)
 	} else {
-		logger.Printf("%s %s", command, params)
+		log.Printf("%s > %s %s", logger.sessionId, command, params)
 	}
 }
 
 func (logger *ftpLogger) PrintResponse(code int, message string) {
-	logger.Printf("%d %s", code, message)
+	log.Printf("%s < %d %s", logger.sessionId, code, message)
 }
