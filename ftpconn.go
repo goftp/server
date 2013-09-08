@@ -3,7 +3,6 @@ package graval
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
 	"path/filepath"
 	"strconv"
@@ -20,6 +19,7 @@ type ftpConn struct {
 	controlWriter *bufio.Writer
 	dataConn      ftpDataSocket
 	driver        FTPDriver
+	logger        *ftpLogger
 	namePrefix    string
 	reqUser       string
 	user          string
@@ -37,6 +37,7 @@ func newftpConn(tcpConn *net.TCPConn, driver FTPDriver) *ftpConn {
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
 	c.driver = driver
+	c.logger = newFtpLogger("foo")
 	return c
 }
 
@@ -46,7 +47,7 @@ func newftpConn(tcpConn *net.TCPConn, driver FTPDriver) *ftpConn {
 // goroutine, so use this channel to be notified when the connection can be
 // cleaned up.
 func (ftpConn *ftpConn) Serve() {
-	log.Print("Connection Established")
+	ftpConn.logger.Print("Connection Established")
 	// send welcome
 	ftpConn.writeMessage(220, welcomeMessage)
 	// read commands
@@ -57,7 +58,7 @@ func (ftpConn *ftpConn) Serve() {
 		}
 		ftpConn.receiveLine(line)
 	}
-	log.Print("Connection Terminated")
+	ftpConn.logger.Print("Connection Terminated")
 }
 
 // Close will manually close this connection, even if the client isn't ready.
@@ -71,7 +72,7 @@ func (ftpConn *ftpConn) Close() {
 // receiveLine accepts a single line FTP command and co-ordinates an
 // appropriate response.
 func (ftpConn *ftpConn) receiveLine(line string) {
-	log.Print(line)
+	ftpConn.logger.Print(line)
 	command, param := ftpConn.parseLine(line)
 	cmdObj := commands[command]
 	if cmdObj == nil {
@@ -98,7 +99,7 @@ func (ftpConn *ftpConn) parseLine(line string) (string, string) {
 // writeMessage will send a standard FTP response back to the client.
 func (ftpConn *ftpConn) writeMessage(code int, message string) (wrote int, err error) {
 	line := fmt.Sprintf("%d %s\r\n", code, message)
-	log.Print(line)
+	ftpConn.logger.Print(line)
 	wrote, err = ftpConn.controlWriter.WriteString(line)
 	ftpConn.controlWriter.Flush()
 	return
