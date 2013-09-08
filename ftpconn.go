@@ -99,7 +99,7 @@ func (ftpConn *ftpConn) parseLine(line string) (string, string) {
 // writeMessage will send a standard FTP response back to the client.
 func (ftpConn *ftpConn) writeMessage(code int, message string) (wrote int, err error) {
 	line := fmt.Sprintf("%d %s\r\n", code, message)
-	ftpConn.logger.Print(line)
+	ftpConn.logger.Printf("%d %s", code, message)
 	wrote, err = ftpConn.controlWriter.WriteString(line)
 	ftpConn.controlWriter.Flush()
 	return

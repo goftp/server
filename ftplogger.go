@@ -1,6 +1,7 @@
 package graval
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -17,4 +18,8 @@ func newFtpLogger(id string) *ftpLogger {
 
 func (logger *ftpLogger) Print(message string) {
 	log.Printf("%s - %s", logger.sessionId, message)
+}
+
+func (logger *ftpLogger) Printf(format string, v ...interface{}) {
+	logger.Print(fmt.Sprintf(format, v...))
 }
