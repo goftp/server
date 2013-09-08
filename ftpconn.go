@@ -3,6 +3,7 @@ package graval
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"path/filepath"
 	"strconv"
@@ -19,7 +20,6 @@ type ftpConn struct {
 	controlWriter *bufio.Writer
 	dataConn      ftpDataSocket
 	driver        FTPDriver
-	logger        ftpLogger
 	namePrefix    string
 	reqUser       string
 	user          string
@@ -30,14 +30,13 @@ type ftpConn struct {
 // an active net.TCPConn. The TCP connection should already be open before
 // it is handed to this functions. driver is an instance of FTPDriver that
 // will handle all auth and persistence details.
-func newftpConn(tcpConn *net.TCPConn, logger ftpLogger, driver FTPDriver) *ftpConn {
+func newftpConn(tcpConn *net.TCPConn, driver FTPDriver) *ftpConn {
 	c := new(ftpConn)
 	c.namePrefix = "/"
 	c.conn = tcpConn
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
 	c.driver = driver
-	c.logger = logger
 	return c
 }
 
@@ -47,7 +46,7 @@ func newftpConn(tcpConn *net.TCPConn, logger ftpLogger, driver FTPDriver) *ftpCo
 // goroutine, so use this channel to be notified when the connection can be
 // cleaned up.
 func (ftpConn *ftpConn) Serve() {
-	ftpConn.logger.Info("Connection Established")
+	log.Print("Connection Established")
 	// send welcome
 	ftpConn.writeMessage(220, welcomeMessage)
 	// read commands
@@ -58,7 +57,7 @@ func (ftpConn *ftpConn) Serve() {
 		}
 		ftpConn.receiveLine(line)
 	}
-	ftpConn.logger.Info("Connection Terminated")
+	log.Print("Connection Terminated")
 }
 
 // Close will manually close this connection, even if the client isn't ready.
@@ -72,7 +71,7 @@ func (ftpConn *ftpConn) Close() {
 // receiveLine accepts a single line FTP command and co-ordinates an
 // appropriate response.
 func (ftpConn *ftpConn) receiveLine(line string) {
-	ftpConn.logger.Info(line)
+	log.Print(line)
 	command, param := ftpConn.parseLine(line)
 	cmdObj := commands[command]
 	if cmdObj == nil {
@@ -99,7 +98,7 @@ func (ftpConn *ftpConn) parseLine(line string) (string, string) {
 // writeMessage will send a standard FTP response back to the client.
 func (ftpConn *ftpConn) writeMessage(code int, message string) (wrote int, err error) {
 	line := fmt.Sprintf("%d %s\r\n", code, message)
-	ftpConn.logger.Info(line)
+	log.Print(line)
 	wrote, err = ftpConn.controlWriter.WriteString(line)
 	ftpConn.controlWriter.Flush()
 	return

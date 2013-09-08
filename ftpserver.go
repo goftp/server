@@ -9,6 +9,7 @@
 package graval
 
 import (
+	"log"
 	"log/syslog"
 	"net"
 	"strconv"
@@ -134,7 +135,7 @@ func (ftpServer *FTPServer) ListenAndServe() error {
 		if err != nil {
 			ftpServer.logger.Info("Error creating driver, aborting client connection")
 		} else {
-			ftpConn := newftpConn(tcpConn, ftpServer.logger, driver)
+			ftpConn := newftpConn(tcpConn, driver)
 			go ftpConn.Serve()
 		}
 	}
