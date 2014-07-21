@@ -1,23 +1,12 @@
-# graval
+# server
 
-An experimental FTP server framework. By providing a simple driver class that
-responds to a handful of methods you can have a complete FTP server.
+An FTP server framework forked from [github.com/yob/graval](http://github.com/yob/graval) and changed a lot.
 
-Some sample use cases include persisting data to:
-
-* an Amazon S3 bucket
-* a relational database
-* redis
-* memory
-
-There is a sample in-memory driver available - see the usage instructions below
-for the steps to use it.
-
-Full documentation for the package is available on [godoc](http://godoc.org/github.com/yob/graval)
+Full documentation for the package is available on [godoc](http://godoc.org/github.com/goftp/server)
 
 ## Installation
 
-    go get github.com/yob/graval
+    go get github.com/goftp/server
 
 ## Usage
 
@@ -27,26 +16,23 @@ persistence layer - the required driver contract is listed below.
 There is a sample in-memory driver available as a demo. You can build it with
 this command:
 
-    go install github.com/yob/graval/graval-mem
+    go install github.com/goftp/ftpd
 
 Then run it:
 
-    ./bin/graval-mem
+    ./bin/ftpd
 
 And finally, connect to the server with any FTP client and the following
 details:
 
     host: 127.0.0.1
+    port: 2121
     username: test
     password: 1234
 
-### The Driver Contract
-
-Your driver MUST implement a number of simple methods. You can view the required
-contract in the package docs on [godoc](http://godoc.org/github.com/yob/graval)
-
 ## Contributors
 
+* Lunny Xiao <xiaolunwen@gmail.com>
 * James Healy <james@yob.id.au> [http://www.yob.id.au](http://www.yob.id.au)
 
 ## Warning

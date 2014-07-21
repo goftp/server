@@ -1,4 +1,4 @@
-package graval
+package server
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 
 // A data socket is used to send non-control data between the client and
 // server.
-type ftpDataSocket interface {
+type DataSocket interface {
 	Host() string
 
 	Port() int
@@ -26,13 +26,13 @@ type ftpDataSocket interface {
 }
 
 type ftpActiveSocket struct {
-	conn *net.TCPConn
-	host string
-	port int
-	logger *ftpLogger
+	conn   *net.TCPConn
+	host   string
+	port   int
+	logger *Logger
 }
 
-func newActiveSocket(host string, port int, logger *ftpLogger) (ftpDataSocket, error) {
+func newActiveSocket(host string, port int, logger *Logger) (DataSocket, error) {
 	connectTo := buildTcpString(host, port)
 	logger.Print("Opening active data connection to " + connectTo)
 	raddr, err := net.ResolveTCPAddr("tcp", connectTo)
@@ -73,16 +73,15 @@ func (socket *ftpActiveSocket) Close() error {
 	return socket.conn.Close()
 }
 
-
 type ftpPassiveSocket struct {
-	conn     *net.TCPConn
-	port     int
-	ingress  chan []byte
-	egress   chan []byte
-	logger   *ftpLogger
+	conn    *net.TCPConn
+	port    int
+	ingress chan []byte
+	egress  chan []byte
+	logger  *Logger
 }
 
-func newPassiveSocket(logger *ftpLogger) (ftpDataSocket, error) {
+func newPassiveSocket(logger *Logger) (DataSocket, error) {
 	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
@@ -135,7 +134,7 @@ func (socket *ftpPassiveSocket) ListenAndServe() {
 		socket.logger.Print(err)
 		return
 	}
-	add   := listener.Addr()
+	add := listener.Addr()
 	parts := strings.Split(add.String(), ":")
 	port, err := strconv.Atoi(parts[1])
 	if err == nil {
@@ -164,4 +163,3 @@ func (socket *ftpPassiveSocket) waitForOpenSocket() bool {
 	}
 	return true
 }
-

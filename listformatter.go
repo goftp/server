@@ -1,14 +1,15 @@
-package graval
+package server
 
 import (
-	"github.com/jehiah/go-strftime"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/jehiah/go-strftime"
 )
 
 type listFormatter struct {
-	files    []os.FileInfo
+	files []os.FileInfo
 }
 
 func newListFormatter(files []os.FileInfo) *listFormatter {
@@ -46,7 +47,7 @@ func (formatter *listFormatter) Detailed() string {
 
 func lpad(input string, length int) (result string) {
 	if len(input) < length {
-		result = strings.Repeat(" ", length-len(input))+input
+		result = strings.Repeat(" ", length-len(input)) + input
 	} else if len(input) == length {
 		result = input
 	} else {

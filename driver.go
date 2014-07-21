@@ -1,4 +1,4 @@
-package graval
+package server
 
 import (
 	"io"
@@ -8,14 +8,14 @@ import (
 
 // For each client that connects to the server, a new FTPDriver is required.
 // Create an implementation if this interface and provide it to FTPServer.
-type FTPDriverFactory interface {
-	NewDriver() (FTPDriver, error)
+type DriverFactory interface {
+	NewDriver() (Driver, error)
 }
 
 // You will create an implementation of this interface that speaks to your
 // chosen persistence layer. graval will create a new instance of your
 // driver for each client that connects and delegate to it as required.
-type FTPDriver interface {
+type Driver interface {
 	// params  - username, password
 	// returns - true if the provided details are valid
 	Authenticate(string, string) bool
@@ -59,7 +59,7 @@ type FTPDriver interface {
 
 	// params  - path
 	// returns - a string containing the file data to send to the client
-	GetFile(string) (string, error)
+	GetFile(string) (int64, io.ReadCloser, error)
 
 	// params  - desination path, an io.Reader containing the file data
 	// returns - true if the data was successfully persisted

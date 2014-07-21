@@ -1,4 +1,4 @@
-package graval
+package server
 
 import (
 	"bufio"
@@ -17,13 +17,13 @@ const (
 	welcomeMessage = "Welcome to the Go FTP Server"
 )
 
-type ftpConn struct {
-	conn          *net.TCPConn
+type Conn struct {
+	conn          net.Conn
 	controlReader *bufio.Reader
 	controlWriter *bufio.Writer
-	dataConn      ftpDataSocket
-	driver        FTPDriver
-	logger        *ftpLogger
+	dataConn      DataSocket
+	driver        Driver
+	logger        *Logger
 	sessionId     string
 	namePrefix    string
 	reqUser       string
@@ -31,19 +31,19 @@ type ftpConn struct {
 	renameFrom    string
 }
 
-// NewftpConn constructs a new object that will handle the FTP protocol over
+// NewConn constructs a new object that will handle the FTP protocol over
 // an active net.TCPConn. The TCP connection should already be open before
 // it is handed to this functions. driver is an instance of FTPDriver that
 // will handle all auth and persistence details.
-func newftpConn(tcpConn *net.TCPConn, driver FTPDriver) *ftpConn {
-	c := new(ftpConn)
+func newConn(tcpConn net.Conn, driver Driver) *Conn {
+	c := new(Conn)
 	c.namePrefix = "/"
 	c.conn = tcpConn
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
 	c.driver = driver
 	c.sessionId = newSessionId()
-	c.logger = newFtpLogger(c.sessionId)
+	c.logger = newLogger(c.sessionId)
 	return c
 }
 
@@ -64,49 +64,50 @@ func newSessionId() string {
 // message when the connection closes. This loop will be running inside a
 // goroutine, so use this channel to be notified when the connection can be
 // cleaned up.
-func (ftpConn *ftpConn) Serve() {
-	ftpConn.logger.Print("Connection Established")
+func (Conn *Conn) Serve() {
+	Conn.logger.Print("Connection Established")
 	// send welcome
-	ftpConn.writeMessage(220, welcomeMessage)
+	Conn.writeMessage(220, welcomeMessage)
 	// read commands
 	for {
-		line, err := ftpConn.controlReader.ReadString('\n')
+		line, err := Conn.controlReader.ReadString('\n')
 		if err != nil {
+			fmt.Println("read error:", err)
 			break
 		}
-		ftpConn.receiveLine(line)
+		Conn.receiveLine(line)
 	}
-	ftpConn.logger.Print("Connection Terminated")
+	Conn.logger.Print("Connection Terminated")
 }
 
 // Close will manually close this connection, even if the client isn't ready.
-func (ftpConn *ftpConn) Close() {
-	ftpConn.conn.Close()
-	if ftpConn.dataConn != nil {
-		ftpConn.dataConn.Close()
+func (Conn *Conn) Close() {
+	Conn.conn.Close()
+	if Conn.dataConn != nil {
+		Conn.dataConn.Close()
 	}
 }
 
 // receiveLine accepts a single line FTP command and co-ordinates an
 // appropriate response.
-func (ftpConn *ftpConn) receiveLine(line string) {
-	command, param := ftpConn.parseLine(line)
-	ftpConn.logger.PrintCommand(command, param)
+func (Conn *Conn) receiveLine(line string) {
+	command, param := Conn.parseLine(line)
+	Conn.logger.PrintCommand(command, param)
 	cmdObj := commands[command]
 	if cmdObj == nil {
-		ftpConn.writeMessage(500, "Command not found")
+		Conn.writeMessage(500, "Command not found")
 		return
 	}
 	if cmdObj.RequireParam() && param == "" {
-		ftpConn.writeMessage(553, "action aborted, required param missing")
-	} else if cmdObj.RequireAuth() && ftpConn.user == "" {
-		ftpConn.writeMessage(530, "not logged in")
+		Conn.writeMessage(553, "action aborted, required param missing")
+	} else if cmdObj.RequireAuth() && Conn.user == "" {
+		Conn.writeMessage(530, "not logged in")
 	} else {
-		cmdObj.Execute(ftpConn, param)
+		cmdObj.Execute(Conn, param)
 	}
 }
 
-func (ftpConn *ftpConn) parseLine(line string) (string, string) {
+func (Conn *Conn) parseLine(line string) (string, string) {
 	params := strings.SplitN(strings.Trim(line, "\r\n"), " ", 2)
 	if len(params) == 1 {
 		return params[0], ""
@@ -115,11 +116,11 @@ func (ftpConn *ftpConn) parseLine(line string) (string, string) {
 }
 
 // writeMessage will send a standard FTP response back to the client.
-func (ftpConn *ftpConn) writeMessage(code int, message string) (wrote int, err error) {
-	ftpConn.logger.PrintResponse(code, message)
+func (Conn *Conn) writeMessage(code int, message string) (wrote int, err error) {
+	Conn.logger.PrintResponse(code, message)
 	line := fmt.Sprintf("%d %s\r\n", code, message)
-	wrote, err = ftpConn.controlWriter.WriteString(line)
-	ftpConn.controlWriter.Flush()
+	wrote, err = Conn.controlWriter.WriteString(line)
+	Conn.controlWriter.Flush()
 	return
 }
 
@@ -140,13 +141,13 @@ func (ftpConn *ftpConn) writeMessage(code int, message string) (wrote int, err e
 // The driver implementation is responsible for deciding how to treat this path.
 // Obviously they MUST NOT just read the path off disk. The probably want to
 // prefix the path with something to scope the users access to a sandbox.
-func (ftpConn *ftpConn) buildPath(filename string) (fullPath string) {
+func (Conn *Conn) buildPath(filename string) (fullPath string) {
 	if len(filename) > 0 && filename[0:1] == "/" {
 		fullPath = filepath.Clean(filename)
 	} else if len(filename) > 0 && filename != "-a" {
-		fullPath = filepath.Clean(ftpConn.namePrefix + "/" + filename)
+		fullPath = filepath.Clean(Conn.namePrefix + "/" + filename)
 	} else {
-		fullPath = filepath.Clean(ftpConn.namePrefix)
+		fullPath = filepath.Clean(Conn.namePrefix)
 	}
 	fullPath = strings.Replace(fullPath, "//", "/", -1)
 	return
@@ -154,10 +155,23 @@ func (ftpConn *ftpConn) buildPath(filename string) (fullPath string) {
 
 // sendOutofbandData will send a string to the client via the currently open
 // data socket. Assumes the socket is open and ready to be used.
-func (ftpConn *ftpConn) sendOutofbandData(data string) {
+/*func (Conn *Conn) sendOutofbandData(data string) {
 	bytes := len(data)
-	ftpConn.dataConn.Write([]byte(data))
-	ftpConn.dataConn.Close()
+	Conn.dataConn.Write([]byte(data))
+	Conn.dataConn.Close()
 	message := "Closing data connection, sent " + strconv.Itoa(bytes) + " bytes"
-	ftpConn.writeMessage(226, message)
+	Conn.writeMessage(226, message)
+}*/
+
+func (Conn *Conn) sendOutofBandDataWriter(data io.ReadCloser) error {
+	defer data.Close()
+
+	bytes, err := io.Copy(Conn.dataConn, data)
+	if err != nil {
+		return err
+	}
+	defer Conn.dataConn.Close()
+	message := "Closing data connection, sent " + strconv.Itoa(int(bytes)) + " bytes"
+	Conn.writeMessage(226, message)
+	return nil
 }
