@@ -9,6 +9,7 @@
 package server
 
 import (
+	"bufio"
 	"crypto/tls"
 	"net"
 	"strconv"
@@ -20,6 +21,8 @@ type ServerOpts struct {
 	// The factory that will be used to create a new FTPDriver instance for
 	// each client connection. This is a mandatory option.
 	Factory DriverFactory
+
+	Auth Auth
 
 	// Server Name, Default is Go Ftp Server
 	Name string
@@ -40,6 +43,8 @@ type ServerOpts struct {
 
 	// if tls used, key file is required
 	KeyFile string
+
+	WelcomeMessage string
 }
 
 // Server is the root of your FTP application. You should instantiate one
@@ -78,6 +83,18 @@ func serverOptsWithDefaults(opts *ServerOpts) *ServerOpts {
 		newOpts.Name = opts.Name
 	}
 
+	if opts.WelcomeMessage == "" {
+		newOpts.WelcomeMessage = defaultWelcomeMessage
+	} else {
+		newOpts.WelcomeMessage = opts.WelcomeMessage
+	}
+
+	if opts.Auth == nil {
+		newOpts.Auth = AnonymousAuth{}
+	} else {
+		newOpts.Auth = opts.Auth
+	}
+
 	newOpts.TLS = opts.TLS
 	newOpts.KeyFile = opts.KeyFile
 	newOpts.CertFile = opts.CertFile
@@ -111,6 +128,23 @@ func NewServer(opts *ServerOpts) *Server {
 	s.driverFactory = opts.Factory
 	s.logger = newLogger("")
 	return s
+}
+
+// NewConn constructs a new object that will handle the FTP protocol over
+// an active net.TCPConn. The TCP connection should already be open before
+// it is handed to this functions. driver is an instance of FTPDriver that
+// will handle all auth and persistence details.
+func (server *Server) newConn(tcpConn net.Conn, driver Driver) *Conn {
+	c := new(Conn)
+	c.namePrefix = "/"
+	c.conn = tcpConn
+	c.controlReader = bufio.NewReader(tcpConn)
+	c.controlWriter = bufio.NewWriter(tcpConn)
+	c.driver = driver
+	c.server = server
+	c.sessionId = newSessionId()
+	c.logger = newLogger(c.sessionId)
+	return c
 }
 
 func simpleTLSConfig(certFile, keyFile string) (*tls.Config, error) {
@@ -172,7 +206,7 @@ func (Server *Server) ListenAndServe() error {
 		if err != nil {
 			Server.logger.Print("Error creating driver, aborting client connection")
 		} else {
-			ftpConn := newConn(tcpConn, driver)
+			ftpConn := Server.newConn(tcpConn, driver)
 			go ftpConn.Serve()
 		}
 	}

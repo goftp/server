@@ -3,7 +3,6 @@ package server
 import (
 	"io"
 	"os"
-	"time"
 )
 
 // For each client that connects to the server, a new FTPDriver is required.
@@ -18,18 +17,13 @@ type DriverFactory interface {
 type Driver interface {
 	// params  - username, password
 	// returns - true if the provided details are valid
-	Authenticate(string, string) bool
-
-	// params  - a file path
-	// returns - an int with the number of bytes in the file or -1 if the file
-	//           doesn't exist
-	Bytes(string) int
+	//Authenticate(string, string) bool
 
 	// params  - a file path
 	// returns - a time indicating when the requested path was last modified
 	//         - an error if the file doesn't exist or the user lacks
 	//           permissions
-	ModifiedTime(string) (time.Time, error)
+	Stat(string) (os.FileInfo, error)
 
 	// params  - path
 	// returns - true if the current user is permitted to change to the
@@ -63,5 +57,5 @@ type Driver interface {
 
 	// params  - desination path, an io.Reader containing the file data
 	// returns - true if the data was successfully persisted
-	PutFile(string, io.Reader) bool
+	PutFile(string, io.Reader) error
 }

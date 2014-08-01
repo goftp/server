@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	welcomeMessage = "Welcome to the Go FTP Server"
+	defaultWelcomeMessage = "Welcome to the Go FTP Server"
 )
 
 type Conn struct {
@@ -24,27 +24,12 @@ type Conn struct {
 	dataConn      DataSocket
 	driver        Driver
 	logger        *Logger
+	server        *Server
 	sessionId     string
 	namePrefix    string
 	reqUser       string
 	user          string
 	renameFrom    string
-}
-
-// NewConn constructs a new object that will handle the FTP protocol over
-// an active net.TCPConn. The TCP connection should already be open before
-// it is handed to this functions. driver is an instance of FTPDriver that
-// will handle all auth and persistence details.
-func newConn(tcpConn net.Conn, driver Driver) *Conn {
-	c := new(Conn)
-	c.namePrefix = "/"
-	c.conn = tcpConn
-	c.controlReader = bufio.NewReader(tcpConn)
-	c.controlWriter = bufio.NewWriter(tcpConn)
-	c.driver = driver
-	c.sessionId = newSessionId()
-	c.logger = newLogger(c.sessionId)
-	return c
 }
 
 // returns a random 20 char string that can be used as a unique session ID
@@ -67,13 +52,18 @@ func newSessionId() string {
 func (Conn *Conn) Serve() {
 	Conn.logger.Print("Connection Established")
 	// send welcome
-	Conn.writeMessage(220, welcomeMessage)
+	Conn.writeMessage(220, Conn.server.WelcomeMessage)
 	// read commands
 	for {
 		line, err := Conn.controlReader.ReadString('\n')
 		if err != nil {
-			Conn.logger.Println("read error:", err)
-			break
+			if err != io.EOF {
+				Conn.logger.Print(fmt.Sprintln("read error:", err))
+				break
+			} else {
+				continue
+			}
+
 		}
 		Conn.receiveLine(line)
 	}
@@ -93,7 +83,7 @@ func (Conn *Conn) Close() {
 func (Conn *Conn) receiveLine(line string) {
 	command, param := Conn.parseLine(line)
 	Conn.logger.PrintCommand(command, param)
-	cmdObj := commands[command]
+	cmdObj := commands[strings.ToUpper(command)]
 	if cmdObj == nil {
 		Conn.writeMessage(500, "Command not found")
 		return

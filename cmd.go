@@ -1,3 +1,11 @@
+/*
+http://tools.ietf.org/html/rfc959
+
+http://www.faqs.org/rfcs/rfc2389.html
+http://www.faqs.org/rfcs/rfc959.html
+
+http://tools.ietf.org/html/rfc2428
+*/
 package server
 
 import (
@@ -12,6 +20,7 @@ import (
 )
 
 type Command interface {
+	IsExtend() bool
 	RequireParam() bool
 	RequireAuth() bool
 	Execute(*Conn, string)
@@ -32,6 +41,7 @@ var (
 		"ENC":  commandEnc{},
 		"EPRT": commandEprt{},
 		"EPSV": commandEpsv{},
+		//"FEAT": commandFeat{},
 		"LIST": commandList{},
 		"NLST": commandNlst{},
 		"MDTM": commandMdtm{},
@@ -39,6 +49,7 @@ var (
 		"MKD":  commandMkd{},
 		"MODE": commandMode{},
 		"NOOP": commandNoop{},
+		"OPTS": commandOpts{},
 		"PASS": commandPass{},
 		"PASV": commandPasv{},
 		"PBSZ": commandPbsz{},
@@ -69,6 +80,10 @@ var (
 // basic OK message.
 type commandAllo struct{}
 
+func (cmd commandAllo) IsExtend() bool {
+	return false
+}
+
 func (cmd commandAllo) RequireParam() bool {
 	return false
 }
@@ -81,10 +96,77 @@ func (cmd commandAllo) Execute(conn *Conn, param string) {
 	conn.writeMessage(202, "Obsolete")
 }
 
+type commandOpts struct{}
+
+func (cmd commandOpts) IsExtend() bool {
+	return false
+}
+
+func (cmd commandOpts) RequireParam() bool {
+	return false
+}
+
+func (cmd commandOpts) RequireAuth() bool {
+	return false
+}
+
+func (cmd commandOpts) Execute(conn *Conn, param string) {
+	parts := strings.Fields(param)
+	if len(parts) != 2 {
+		conn.writeMessage(550, "Unknow params")
+		return
+	}
+	if strings.ToUpper(parts[0]) != "UTF8" {
+		conn.writeMessage(550, "Unknow params")
+		return
+	}
+
+	if strings.ToUpper(parts[1]) == "ON" {
+		conn.writeMessage(200, "UTF8 mode enabled")
+	} else {
+		conn.writeMessage(550, "Unsupported non-utf8 mode")
+	}
+}
+
+type commandFeat struct{}
+
+func (cmd commandFeat) IsExtend() bool {
+	return false
+}
+
+func (cmd commandFeat) RequireParam() bool {
+	return false
+}
+
+func (cmd commandFeat) RequireAuth() bool {
+	return false
+}
+
+var (
+	feats    = "211-Extensions supported:\n%s211 END"
+	featCmds = ""
+)
+
+func init() {
+	for k, v := range commands {
+		if v.IsExtend() {
+			featCmds = featCmds + " " + k + "\n"
+		}
+	}
+}
+
+func (cmd commandFeat) Execute(conn *Conn, param string) {
+	conn.writeMessage(211, fmt.Sprintf(feats, featCmds))
+}
+
 // cmdCdup responds to the CDUP FTP command.
 //
 // Allows the client change their current directory to the parent.
 type commandCdup struct{}
+
+func (cmd commandCdup) IsExtend() bool {
+	return false
+}
 
 func (cmd commandCdup) RequireParam() bool {
 	return false
@@ -102,6 +184,10 @@ func (cmd commandCdup) Execute(conn *Conn, param string) {
 // commandCwd responds to the CWD FTP command. It allows the client to change the
 // current working directory.
 type commandCwd struct{}
+
+func (cmd commandCwd) IsExtend() bool {
+	return false
+}
 
 func (cmd commandCwd) RequireParam() bool {
 	return true
@@ -125,6 +211,10 @@ func (cmd commandCwd) Execute(conn *Conn, param string) {
 // a file
 type commandDele struct{}
 
+func (cmd commandDele) IsExtend() bool {
+	return false
+}
+
 func (cmd commandDele) RequireParam() bool {
 	return false
 }
@@ -146,6 +236,10 @@ func (cmd commandDele) Execute(conn *Conn, param string) {
 // request an active data socket with more options than the original PORT
 // command. It mainly adds ipv6 support.
 type commandEprt struct{}
+
+func (cmd commandEprt) IsExtend() bool {
+	return true
+}
 
 func (cmd commandEprt) RequireParam() bool {
 	return true
@@ -179,6 +273,10 @@ func (cmd commandEprt) Execute(conn *Conn, param string) {
 // command. It mainly adds ipv6 support, although we don't support that yet.
 type commandEpsv struct{}
 
+func (cmd commandEpsv) IsExtend() bool {
+	return true
+}
+
 func (cmd commandEpsv) RequireParam() bool {
 	return false
 }
@@ -208,6 +306,10 @@ func (cmd commandEpsv) Execute(conn *Conn, param string) {
 // a detailed listing of the contents of a directory.
 type commandList struct{}
 
+func (cmd commandList) IsExtend() bool {
+	return false
+}
+
 func (cmd commandList) RequireParam() bool {
 	return false
 }
@@ -218,7 +320,19 @@ func (cmd commandList) RequireAuth() bool {
 
 func (cmd commandList) Execute(conn *Conn, param string) {
 	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
-	path := conn.buildPath(param)
+	fpath := param
+	if param == "-l" {
+		fpath = conn.namePrefix
+	}
+	path := conn.buildPath(fpath)
+	info, err := conn.driver.Stat(path)
+	if err != nil {
+		//conn.writeMessage(, message)
+		return
+	}
+	if !info.IsDir() {
+		return
+	}
 	files := conn.driver.DirContents(path)
 	formatter := newListFormatter(files)
 	conn.sendOutofbandData(formatter.Detailed())
@@ -227,6 +341,10 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 // commandNlst responds to the NLST FTP command. It allows the client to
 // retreive a list of filenames in the current directory.
 type commandNlst struct{}
+
+func (cmd commandNlst) IsExtend() bool {
+	return false
+}
 
 func (cmd commandNlst) RequireParam() bool {
 	return false
@@ -248,6 +366,10 @@ func (cmd commandNlst) Execute(conn *Conn, param string) {
 // retreive the last modified time of a file.
 type commandMdtm struct{}
 
+func (cmd commandMdtm) IsExtend() bool {
+	return false
+}
+
 func (cmd commandMdtm) RequireParam() bool {
 	return true
 }
@@ -258,9 +380,9 @@ func (cmd commandMdtm) RequireAuth() bool {
 
 func (cmd commandMdtm) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
-	time, err := conn.driver.ModifiedTime(path)
+	stat, err := conn.driver.Stat(path)
 	if err == nil {
-		conn.writeMessage(213, strftime.Format("%Y%m%d%H%M%S", time))
+		conn.writeMessage(213, strftime.Format("%Y%m%d%H%M%S", stat.ModTime()))
 	} else {
 		conn.writeMessage(450, "File not available")
 	}
@@ -269,6 +391,10 @@ func (cmd commandMdtm) Execute(conn *Conn, param string) {
 // commandMkd responds to the MKD FTP command. It allows the client to create
 // a new directory
 type commandMkd struct{}
+
+func (cmd commandMkd) IsExtend() bool {
+	return false
+}
 
 func (cmd commandMkd) RequireParam() bool {
 	return false
@@ -295,6 +421,10 @@ func (cmd commandMkd) Execute(conn *Conn, param string) {
 // socket unchanged.
 type commandMode struct{}
 
+func (cmd commandMode) IsExtend() bool {
+	return false
+}
+
 func (cmd commandMode) RequireParam() bool {
 	return true
 }
@@ -317,6 +447,10 @@ func (cmd commandMode) Execute(conn *Conn, param string) {
 // basic 200 message.
 type commandNoop struct{}
 
+func (cmd commandNoop) IsExtend() bool {
+	return false
+}
+
 func (cmd commandNoop) RequireParam() bool {
 	return false
 }
@@ -333,6 +467,10 @@ func (cmd commandNoop) Execute(conn *Conn, param string) {
 // supplied username and password are valid
 type commandPass struct{}
 
+func (cmd commandPass) IsExtend() bool {
+	return false
+}
+
 func (cmd commandPass) RequireParam() bool {
 	return false
 }
@@ -342,7 +480,7 @@ func (cmd commandPass) RequireAuth() bool {
 }
 
 func (cmd commandPass) Execute(conn *Conn, param string) {
-	if conn.driver.Authenticate(conn.reqUser, param) {
+	if conn.server.Auth.CheckPasswd(conn.reqUser, param) {
 		conn.user = conn.reqUser
 		conn.reqUser = ""
 		conn.writeMessage(230, "Password ok, continue")
@@ -356,6 +494,10 @@ func (cmd commandPass) Execute(conn *Conn, param string) {
 // The client is requesting us to open a new TCP listing socket and wait for them
 // to connect to it.
 type commandPasv struct{}
+
+func (cmd commandPasv) IsExtend() bool {
+	return false
+}
 
 func (cmd commandPasv) RequireParam() bool {
 	return false
@@ -394,6 +536,10 @@ func (cmd commandPasv) Execute(conn *Conn, param string) {
 // is requesting that we connect to it
 type commandPort struct{}
 
+func (cmd commandPort) IsExtend() bool {
+	return false
+}
+
 func (cmd commandPort) RequireParam() bool {
 	return true
 }
@@ -422,6 +568,10 @@ func (cmd commandPort) Execute(conn *Conn, param string) {
 // Tells the client what the current working directory is.
 type commandPwd struct{}
 
+func (cmd commandPwd) IsExtend() bool {
+	return false
+}
+
 func (cmd commandPwd) RequireParam() bool {
 	return false
 }
@@ -438,6 +588,10 @@ func (cmd commandPwd) Execute(conn *Conn, param string) {
 // connection be closed.
 type commandQuit struct{}
 
+func (cmd commandQuit) IsExtend() bool {
+	return false
+}
+
 func (cmd commandQuit) RequireParam() bool {
 	return false
 }
@@ -447,12 +601,17 @@ func (cmd commandQuit) RequireAuth() bool {
 }
 
 func (cmd commandQuit) Execute(conn *Conn, param string) {
+	conn.writeMessage(221, "Goodbye")
 	conn.Close()
 }
 
 // commandRetr responds to the RETR FTP command. It allows the client to
 // download a file.
 type commandRetr struct{}
+
+func (cmd commandRetr) IsExtend() bool {
+	return false
+}
 
 func (cmd commandRetr) RequireParam() bool {
 	return true
@@ -477,6 +636,10 @@ func (cmd commandRetr) Execute(conn *Conn, param string) {
 // required for a client to rename a file.
 type commandRnfr struct{}
 
+func (cmd commandRnfr) IsExtend() bool {
+	return false
+}
+
 func (cmd commandRnfr) RequireParam() bool {
 	return false
 }
@@ -493,6 +656,10 @@ func (cmd commandRnfr) Execute(conn *Conn, param string) {
 // cmdRnto responds to the RNTO FTP command. It's the second of two commands
 // required for a client to rename a file.
 type commandRnto struct{}
+
+func (cmd commandRnto) IsExtend() bool {
+	return false
+}
 
 func (cmd commandRnto) RequireParam() bool {
 	return false
@@ -515,6 +682,10 @@ func (cmd commandRnto) Execute(conn *Conn, param string) {
 // directory.
 type commandRmd struct{}
 
+func (cmd commandRmd) IsExtend() bool {
+	return false
+}
+
 func (cmd commandRmd) RequireParam() bool {
 	return false
 }
@@ -534,6 +705,10 @@ func (cmd commandRmd) Execute(conn *Conn, param string) {
 
 type commandAdat struct{}
 
+func (cmd commandAdat) IsExtend() bool {
+	return false
+}
+
 func (cmd commandAdat) RequireParam() bool {
 	return true
 }
@@ -547,6 +722,10 @@ func (cmd commandAdat) Execute(conn *Conn, param string) {
 }
 
 type commandAuth struct{}
+
+func (cmd commandAuth) IsExtend() bool {
+	return false
+}
 
 func (cmd commandAuth) RequireParam() bool {
 	return true
@@ -562,6 +741,10 @@ func (cmd commandAuth) Execute(conn *Conn, param string) {
 
 type commandCcc struct{}
 
+func (cmd commandCcc) IsExtend() bool {
+	return false
+}
+
 func (cmd commandCcc) RequireParam() bool {
 	return true
 }
@@ -575,6 +758,10 @@ func (cmd commandCcc) Execute(conn *Conn, param string) {
 }
 
 type commandEnc struct{}
+
+func (cmd commandEnc) IsExtend() bool {
+	return false
+}
 
 func (cmd commandEnc) RequireParam() bool {
 	return true
@@ -590,6 +777,10 @@ func (cmd commandEnc) Execute(conn *Conn, param string) {
 
 type commandMic struct{}
 
+func (cmd commandMic) IsExtend() bool {
+	return false
+}
+
 func (cmd commandMic) RequireParam() bool {
 	return true
 }
@@ -603,6 +794,10 @@ func (cmd commandMic) Execute(conn *Conn, param string) {
 }
 
 type commandPbsz struct{}
+
+func (cmd commandPbsz) IsExtend() bool {
+	return false
+}
 
 func (cmd commandPbsz) RequireParam() bool {
 	return true
@@ -618,6 +813,10 @@ func (cmd commandPbsz) Execute(conn *Conn, param string) {
 
 type commandProt struct{}
 
+func (cmd commandProt) IsExtend() bool {
+	return false
+}
+
 func (cmd commandProt) RequireParam() bool {
 	return true
 }
@@ -631,6 +830,10 @@ func (cmd commandProt) Execute(conn *Conn, param string) {
 }
 
 type commandConf struct{}
+
+func (cmd commandConf) IsExtend() bool {
+	return false
+}
 
 func (cmd commandConf) RequireParam() bool {
 	return true
@@ -648,6 +851,10 @@ func (cmd commandConf) Execute(conn *Conn, param string) {
 // requested path in bytes.
 type commandSize struct{}
 
+func (cmd commandSize) IsExtend() bool {
+	return false
+}
+
 func (cmd commandSize) RequireParam() bool {
 	return true
 }
@@ -658,17 +865,21 @@ func (cmd commandSize) RequireAuth() bool {
 
 func (cmd commandSize) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
-	bytes := conn.driver.Bytes(path)
-	if bytes >= 0 {
-		conn.writeMessage(213, strconv.Itoa(bytes))
+	stat, err := conn.driver.Stat(path)
+	if err != nil {
+		conn.writeMessage(450, err.Error())
 	} else {
-		conn.writeMessage(450, "file not available")
+		conn.writeMessage(213, strconv.Itoa(int(stat.Size())))
 	}
 }
 
 // commandStor responds to the STOR FTP command. It allows the user to upload a
 // new file.
 type commandStor struct{}
+
+func (cmd commandStor) IsExtend() bool {
+	return false
+}
 
 func (cmd commandStor) RequireParam() bool {
 	return true
@@ -692,14 +903,14 @@ func (cmd commandStor) Execute(conn *Conn, param string) {
 		return
 	}
 	tmpFile.Seek(0, 0)
-	uploadSuccess := conn.driver.PutFile(targetPath, tmpFile)
+	err = conn.driver.PutFile(targetPath, tmpFile)
 	tmpFile.Close()
 	os.Remove(tmpFile.Name())
-	if uploadSuccess {
+	if err == nil {
 		msg := "OK, received " + strconv.Itoa(int(bytes)) + " bytes"
 		conn.writeMessage(226, msg)
 	} else {
-		conn.writeMessage(550, "Action not taken")
+		conn.writeMessage(550, fmt.Sprintln("Action taken failed:", err))
 	}
 }
 
@@ -713,6 +924,10 @@ func (cmd commandStor) Execute(conn *Conn, param string) {
 // These days files are sent unmodified, and F(ile) mode is the only one we
 // really need to support.
 type commandStru struct{}
+
+func (cmd commandStru) IsExtend() bool {
+	return false
+}
 
 func (cmd commandStru) RequireParam() bool {
 	return true
@@ -732,6 +947,10 @@ func (cmd commandStru) Execute(conn *Conn, param string) {
 
 // commandSyst responds to the SYST FTP command by providing a canned response.
 type commandSyst struct{}
+
+func (cmd commandSyst) IsExtend() bool {
+	return false
+}
 
 func (cmd commandSyst) RequireParam() bool {
 	return true
@@ -757,6 +976,10 @@ func (cmd commandSyst) Execute(conn *Conn, param string) {
 //  ignore it.
 type commandType struct{}
 
+func (cmd commandType) IsExtend() bool {
+	return false
+}
+
 func (cmd commandType) RequireParam() bool {
 	return false
 }
@@ -777,6 +1000,10 @@ func (cmd commandType) Execute(conn *Conn, param string) {
 
 // commandUser responds to the USER FTP command by asking for the password
 type commandUser struct{}
+
+func (cmd commandUser) IsExtend() bool {
+	return false
+}
 
 func (cmd commandUser) RequireParam() bool {
 	return true

@@ -121,7 +121,7 @@ func (socket *ftpPassiveSocket) Write(p []byte) (n int, err error) {
 }
 
 func (socket *ftpPassiveSocket) Close() error {
-	socket.logger.Print("closing passive data socket")
+	//socket.logger.Print("closing passive data socket")
 	if socket.conn != nil {
 		return socket.conn.Close()
 	}
@@ -163,9 +163,9 @@ func (socket *ftpPassiveSocket) waitForOpenSocket() bool {
 			break
 		}
 		if retries > 3 {
+			socket.logger.Print("socket isn't open")
 			return false
 		}
-		socket.logger.Print("sleeping, socket isn't open")
 		time.Sleep(500 * time.Millisecond)
 		retries += 1
 	}
