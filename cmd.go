@@ -188,7 +188,13 @@ func (cmd commandEpsv) RequireAuth() bool {
 }
 
 func (cmd commandEpsv) Execute(conn *Conn, param string) {
-	socket, err := newPassiveSocket(conn.logger)
+	addr := conn.conn.LocalAddr()
+	parts := strings.Split(addr.String(), ":")
+	if len(parts) != 2 {
+		conn.writeMessage(425, "Data connection failed")
+		return
+	}
+	socket, err := newPassiveSocket(parts[0], conn.logger)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -328,7 +334,7 @@ func (cmd commandNoop) Execute(conn *Conn, param string) {
 type commandPass struct{}
 
 func (cmd commandPass) RequireParam() bool {
-	return true
+	return false
 }
 
 func (cmd commandPass) RequireAuth() bool {
@@ -360,7 +366,13 @@ func (cmd commandPasv) RequireAuth() bool {
 }
 
 func (cmd commandPasv) Execute(conn *Conn, param string) {
-	socket, err := newPassiveSocket(conn.logger)
+	addr := conn.conn.LocalAddr()
+	parts := strings.Split(addr.String(), ":")
+	if len(parts) != 2 {
+		conn.writeMessage(425, "Data connection failed")
+		return
+	}
+	socket, err := newPassiveSocket(parts[0], conn.logger)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -368,8 +380,9 @@ func (cmd commandPasv) Execute(conn *Conn, param string) {
 	conn.dataConn = socket
 	p1 := socket.Port() / 256
 	p2 := socket.Port() - (p1 * 256)
+	host := socket.Host()
 
-	quads := strings.Split(socket.Host(), ".")
+	quads := strings.Split(host, ".")
 	target := fmt.Sprintf("(%s,%s,%s,%s,%d,%d)", quads[0], quads[1], quads[2], quads[3], p1, p2)
 	msg := "Entering Passive Mode " + target
 	conn.writeMessage(227, msg)

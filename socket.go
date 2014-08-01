@@ -76,16 +76,18 @@ func (socket *ftpActiveSocket) Close() error {
 type ftpPassiveSocket struct {
 	conn    *net.TCPConn
 	port    int
+	host    string
 	ingress chan []byte
 	egress  chan []byte
 	logger  *Logger
 }
 
-func newPassiveSocket(logger *Logger) (DataSocket, error) {
+func newPassiveSocket(host string, logger *Logger) (DataSocket, error) {
 	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
 	socket.logger = logger
+	socket.host = host
 	go socket.ListenAndServe()
 	for {
 		if socket.Port() > 0 {
@@ -97,7 +99,7 @@ func newPassiveSocket(logger *Logger) (DataSocket, error) {
 }
 
 func (socket *ftpPassiveSocket) Host() string {
-	return "127.0.0.1"
+	return socket.host
 }
 
 func (socket *ftpPassiveSocket) Port() int {
@@ -120,11 +122,14 @@ func (socket *ftpPassiveSocket) Write(p []byte) (n int, err error) {
 
 func (socket *ftpPassiveSocket) Close() error {
 	socket.logger.Print("closing passive data socket")
-	return socket.conn.Close()
+	if socket.conn != nil {
+		return socket.conn.Close()
+	}
+	return nil
 }
 
 func (socket *ftpPassiveSocket) ListenAndServe() {
-	laddr, err := net.ResolveTCPAddr("tcp", socket.Host()+":0")
+	laddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:0")
 	if err != nil {
 		socket.logger.Print(err)
 		return
@@ -136,10 +141,13 @@ func (socket *ftpPassiveSocket) ListenAndServe() {
 	}
 	add := listener.Addr()
 	parts := strings.Split(add.String(), ":")
-	port, err := strconv.Atoi(parts[1])
-	if err == nil {
-		socket.port = port
+	port, err := strconv.Atoi(parts[len(parts)-1])
+	if err != nil {
+		socket.logger.Print(err)
+		return
 	}
+
+	socket.port = port
 	tcpConn, err := listener.AcceptTCP()
 	if err != nil {
 		socket.logger.Print(err)

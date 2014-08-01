@@ -10,7 +10,6 @@ package server
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -75,6 +74,8 @@ func serverOptsWithDefaults(opts *ServerOpts) *ServerOpts {
 	newOpts.Factory = opts.Factory
 	if opts.Name == "" {
 		newOpts.Name = "Go FTP Server"
+	} else {
+		newOpts.Name = opts.Name
 	}
 
 	newOpts.TLS = opts.TLS
@@ -143,9 +144,9 @@ func (Server *Server) ListenAndServe() error {
 
 	var listener net.Listener
 	var err error
-	fmt.Println("-------", *Server.ServerOpts)
+	//fmt.Println("-------", *Server.ServerOpts)
 	if Server.ServerOpts.TLS {
-		fmt.Println("use tls")
+		//fmt.Println("use tls")
 		config, err := simpleTLSConfig(Server.CertFile, Server.KeyFile)
 		if err != nil {
 			return err
@@ -158,6 +159,8 @@ func (Server *Server) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
+
+	Server.logger.Printf("%s listening on %d", Server.Name, Server.Port)
 
 	for {
 		tcpConn, err := listener.Accept()
