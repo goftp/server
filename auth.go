@@ -6,17 +6,19 @@ const (
 )
 
 type Auth interface {
-	AllowAnonymous() bool
+	AllowAnonymous(bool)
+	DefaultPerm(int)
 	CheckPasswd(string, string) bool
 	GetPerms(string, string) int
-	HasPerm(string, string, int) bool
 }
 
 type AnonymousAuth struct {
 }
 
-func (AnonymousAuth) AllowAnonymous() bool {
-	return true
+func (AnonymousAuth) AllowAnonymous(bool) {
+}
+
+func (AnonymousAuth) DefaultPerm(perm int) {
 }
 
 func (AnonymousAuth) CheckPasswd(string, string) bool {
@@ -25,7 +27,4 @@ func (AnonymousAuth) CheckPasswd(string, string) bool {
 
 func (AnonymousAuth) GetPerms(string, string) int {
 	return Read + Write
-}
-func (AnonymousAuth) HasPerm(string, string, int) bool {
-	return true
 }
