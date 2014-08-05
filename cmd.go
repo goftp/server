@@ -10,9 +10,6 @@ package server
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 
@@ -32,6 +29,7 @@ var (
 	commands = commandMap{
 		"ADAT": commandAdat{},
 		"ALLO": commandAllo{},
+		"APPE": commandAppe{},
 		"AUTH": commandAuth{},
 		"CDUP": commandCdup{},
 		"CWD":  commandCwd{},
@@ -58,6 +56,7 @@ var (
 		"PWD":  commandPwd{},
 		"QUIT": commandQuit{},
 		"RETR": commandRetr{},
+		"REST": commandRest{},
 		"RNFR": commandRnfr{},
 		"RNTO": commandRnto{},
 		"RMD":  commandRmd{},
@@ -93,6 +92,25 @@ func (cmd commandAllo) RequireAuth() bool {
 }
 
 func (cmd commandAllo) Execute(conn *Conn, param string) {
+	conn.writeMessage(202, "Obsolete")
+}
+
+type commandAppe struct{}
+
+func (cmd commandAppe) IsExtend() bool {
+	return false
+}
+
+func (cmd commandAppe) RequireParam() bool {
+	return false
+}
+
+func (cmd commandAppe) RequireAuth() bool {
+	return true
+}
+
+func (cmd commandAppe) Execute(conn *Conn, param string) {
+	conn.appendData = true
 	conn.writeMessage(202, "Obsolete")
 }
 
@@ -199,11 +217,12 @@ func (cmd commandCwd) RequireAuth() bool {
 
 func (cmd commandCwd) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
-	if conn.driver.ChangeDir(path) {
+	err := conn.driver.ChangeDir(path)
+	if err == nil {
 		conn.namePrefix = path
 		conn.writeMessage(250, "Directory changed to "+path)
 	} else {
-		conn.writeMessage(550, "Action not taken")
+		conn.writeMessage(550, fmt.Sprintln("Directory change to", path, "failed:", err))
 	}
 }
 
@@ -225,10 +244,11 @@ func (cmd commandDele) RequireAuth() bool {
 
 func (cmd commandDele) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
-	if conn.driver.DeleteFile(path) {
+	err := conn.driver.DeleteFile(path)
+	if err == nil {
 		conn.writeMessage(250, "File deleted")
 	} else {
-		conn.writeMessage(550, "Action not taken")
+		conn.writeMessage(550, fmt.Sprintln("File delete failed:", err))
 	}
 }
 
@@ -327,13 +347,17 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 	path := conn.buildPath(fpath)
 	info, err := conn.driver.Stat(path)
 	if err != nil {
-		//conn.writeMessage(, message)
+		conn.writeMessage(550, err.Error())
 		return
 	}
 	if !info.IsDir() {
 		return
 	}
-	files := conn.driver.DirContents(path)
+	files, err := conn.driver.DirContents(path)
+	if err != nil {
+		//conn.writeMessage()
+		return
+	}
 	formatter := newListFormatter(files)
 	conn.sendOutofbandData(formatter.Detailed())
 }
@@ -357,7 +381,11 @@ func (cmd commandNlst) RequireAuth() bool {
 func (cmd commandNlst) Execute(conn *Conn, param string) {
 	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
 	path := conn.buildPath(param)
-	files := conn.driver.DirContents(path)
+	files, err := conn.driver.DirContents(path)
+	if err != nil {
+		//conn.writeMessage()
+		return
+	}
 	formatter := newListFormatter(files)
 	conn.sendOutofbandData(formatter.Short())
 }
@@ -406,10 +434,11 @@ func (cmd commandMkd) RequireAuth() bool {
 
 func (cmd commandMkd) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
-	if conn.driver.MakeDir(path) {
+	err := conn.driver.MakeDir(path)
+	if err == nil {
 		conn.writeMessage(257, "Directory created")
 	} else {
-		conn.writeMessage(550, "Action not taken")
+		conn.writeMessage(550, fmt.Sprintln("Action not taken:", err))
 	}
 }
 
@@ -623,13 +652,43 @@ func (cmd commandRetr) RequireAuth() bool {
 
 func (cmd commandRetr) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
-	bytes, data, err := conn.driver.GetFile(path)
+	defer func() {
+		conn.lastFilePos = 0
+	}()
+	bytes, data, err := conn.driver.GetFile(path, conn.lastFilePos)
 	if err == nil {
 		conn.writeMessage(150, fmt.Sprintf("Data transfer starting %v bytes", bytes))
 		err = conn.sendOutofBandDataWriter(data)
 	} else {
 		conn.writeMessage(551, "File not available")
 	}
+}
+
+type commandRest struct{}
+
+func (cmd commandRest) IsExtend() bool {
+	return false
+}
+
+func (cmd commandRest) RequireParam() bool {
+	return true
+}
+
+func (cmd commandRest) RequireAuth() bool {
+	return true
+}
+
+func (cmd commandRest) Execute(conn *Conn, param string) {
+	var err error
+	conn.lastFilePos, err = strconv.ParseInt(param, 10, 64)
+	if err != nil {
+		conn.writeMessage(551, "File not available")
+		return
+	}
+
+	conn.appendData = true
+
+	conn.writeMessage(350, fmt.Sprintln("Start transfer from", conn.lastFilePos))
 }
 
 // commandRnfr responds to the RNFR FTP command. It's the first of two commands
@@ -671,10 +730,11 @@ func (cmd commandRnto) RequireAuth() bool {
 
 func (cmd commandRnto) Execute(conn *Conn, param string) {
 	toPath := conn.buildPath(param)
-	if conn.driver.Rename(conn.renameFrom, toPath) {
+	err := conn.driver.Rename(conn.renameFrom, toPath)
+	if err == nil {
 		conn.writeMessage(250, "File renamed")
 	} else {
-		conn.writeMessage(550, "Action not taken")
+		conn.writeMessage(550, fmt.Sprintln("Action not taken", err))
 	}
 }
 
@@ -696,10 +756,11 @@ func (cmd commandRmd) RequireAuth() bool {
 
 func (cmd commandRmd) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
-	if conn.driver.DeleteDir(path) {
+	err := conn.driver.DeleteDir(path)
+	if err == nil {
 		conn.writeMessage(250, "Directory deleted")
 	} else {
-		conn.writeMessage(550, "Action not taken")
+		conn.writeMessage(550, fmt.Sprintln("Directory delete failed:", err))
 	}
 }
 
@@ -867,7 +928,7 @@ func (cmd commandSize) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
 	stat, err := conn.driver.Stat(path)
 	if err != nil {
-		conn.writeMessage(450, err.Error())
+		conn.writeMessage(450, fmt.Sprintln("path", path, "not found"))
 	} else {
 		conn.writeMessage(213, strconv.Itoa(int(stat.Size())))
 	}
@@ -892,25 +953,17 @@ func (cmd commandStor) RequireAuth() bool {
 func (cmd commandStor) Execute(conn *Conn, param string) {
 	targetPath := conn.buildPath(param)
 	conn.writeMessage(150, "Data transfer starting")
-	tmpFile, err := ioutil.TempFile("", "stor")
-	if err != nil {
-		conn.writeMessage(450, "error during transfer")
-		return
-	}
-	bytes, err := io.Copy(tmpFile, conn.dataConn)
-	if err != nil {
-		conn.writeMessage(450, "error during transfer")
-		return
-	}
-	tmpFile.Seek(0, 0)
-	err = conn.driver.PutFile(targetPath, tmpFile)
-	tmpFile.Close()
-	os.Remove(tmpFile.Name())
+
+	defer func() {
+		conn.appendData = false
+	}()
+
+	bytes, err := conn.driver.PutFile(targetPath, conn.dataConn, conn.appendData)
 	if err == nil {
 		msg := "OK, received " + strconv.Itoa(int(bytes)) + " bytes"
 		conn.writeMessage(226, msg)
 	} else {
-		conn.writeMessage(550, fmt.Sprintln("Action taken failed:", err))
+		conn.writeMessage(450, fmt.Sprintln("error during transfer:", err))
 	}
 }
 

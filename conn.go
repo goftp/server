@@ -30,6 +30,8 @@ type Conn struct {
 	reqUser       string
 	user          string
 	renameFrom    string
+	lastFilePos   int64
+	appendData    bool
 }
 
 // returns a random 20 char string that can be used as a unique session ID
@@ -55,6 +57,9 @@ func (Conn *Conn) Serve() {
 	Conn.writeMessage(220, Conn.server.WelcomeMessage)
 	// read commands
 	for {
+		/*if Conn.dataConn == nil {
+			break
+		}*/
 		line, err := Conn.controlReader.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
@@ -63,7 +68,6 @@ func (Conn *Conn) Serve() {
 			} else {
 				continue
 			}
-
 		}
 		Conn.receiveLine(line)
 	}
@@ -75,6 +79,7 @@ func (Conn *Conn) Close() {
 	Conn.conn.Close()
 	if Conn.dataConn != nil {
 		Conn.dataConn.Close()
+		Conn.dataConn = nil
 	}
 }
 
@@ -154,14 +159,19 @@ func (Conn *Conn) sendOutofbandData(data string) {
 }
 
 func (Conn *Conn) sendOutofBandDataWriter(data io.ReadCloser) error {
-	defer data.Close()
+	//defer data.Close()
+	defer func() {
+		Conn.dataConn.Close()
+		Conn.dataConn = nil
+	}()
 
+	Conn.lastFilePos = 0
 	bytes, err := io.Copy(Conn.dataConn, data)
 	if err != nil {
 		return err
 	}
-	defer Conn.dataConn.Close()
 	message := "Closing data connection, sent " + strconv.Itoa(int(bytes)) + " bytes"
 	Conn.writeMessage(226, message)
+
 	return nil
 }
