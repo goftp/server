@@ -81,9 +81,7 @@ func serverOptsWithDefaults(opts *ServerOpts) *ServerOpts {
 		newOpts.WelcomeMessage = opts.WelcomeMessage
 	}
 
-	if opts.Auth == nil {
-		newOpts.Auth = AnonymousAuth{}
-	} else {
+	if opts.Auth != nil {
 		newOpts.Auth = opts.Auth
 	}
 
@@ -126,13 +124,14 @@ func NewServer(opts *ServerOpts) *Server {
 // an active net.TCPConn. The TCP connection should already be open before
 // it is handed to this functions. driver is an instance of FTPDriver that
 // will handle all auth and persistence details.
-func (server *Server) newConn(tcpConn net.Conn, driver Driver) *Conn {
+func (server *Server) newConn(tcpConn net.Conn, driver Driver, auth Auth) *Conn {
 	c := new(Conn)
 	c.namePrefix = "/"
 	c.conn = tcpConn
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
 	c.driver = driver
+	c.auth = auth
 	c.server = server
 	c.sessionId = newSessionId()
 	c.logger = newLogger(c.sessionId)
@@ -198,7 +197,7 @@ func (Server *Server) ListenAndServe() error {
 		if err != nil {
 			Server.logger.Print("Error creating driver, aborting client connection")
 		} else {
-			ftpConn := Server.newConn(tcpConn, driver)
+			ftpConn := Server.newConn(tcpConn, driver, Server.Auth)
 			go ftpConn.Serve()
 		}
 	}

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"os"
 	"strconv"
 	"strings"
 
@@ -9,10 +8,10 @@ import (
 )
 
 type listFormatter struct {
-	files []os.FileInfo
+	files []FileInfo
 }
 
-func newListFormatter(files []os.FileInfo) *listFormatter {
+func newListFormatter(files []FileInfo) *listFormatter {
 	f := new(listFormatter)
 	f.files = files
 	return f
@@ -35,7 +34,7 @@ func (formatter *listFormatter) Detailed() string {
 	output := ""
 	for _, file := range formatter.files {
 		output += file.Mode().String()
-		output += " 1 owner group "
+		output += " 1 " + file.Owner() + " " + file.Group() + " "
 		output += lpad(strconv.Itoa(int(file.Size())), 12)
 		output += " " + strftime.Format("%b %d %H:%M", file.ModTime())
 		output += " " + file.Name()

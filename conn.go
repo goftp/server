@@ -23,6 +23,7 @@ type Conn struct {
 	controlWriter *bufio.Writer
 	dataConn      DataSocket
 	driver        Driver
+	auth          Auth
 	logger        *Logger
 	server        *Server
 	sessionId     string
