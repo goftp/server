@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+func Version() string {
+	return "0.1.0504"
+}
+
 // serverOpts contains parameters for graval.NewServer()
 type ServerOpts struct {
 	// The factory that will be used to create a new FTPDriver instance for

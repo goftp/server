@@ -1,8 +1,12 @@
 # server
 
-An FTP server framework forked from [github.com/yob/graval](http://github.com/yob/graval) and changed a lot.
+A FTP server framework forked from [github.com/yob/graval](http://github.com/yob/graval) and changed a lot.
 
 Full documentation for the package is available on [godoc](http://godoc.org/github.com/goftp/server)
+
+## Version
+
+    v0.1.0504
 
 ## Installation
 
