@@ -11,3 +11,38 @@ type Perm interface {
 	ChGroup(string, string) error
 	ChMode(string, os.FileMode) error
 }
+
+type SimplePerm struct {
+	owner, group string
+}
+
+func NewSimplePerm(owner, group string) *SimplePerm {
+	return &SimplePerm{
+		owner: owner,
+		group: group,
+	}
+}
+
+func (s *SimplePerm) GetOwner(string) (string, error) {
+	return s.owner, nil
+}
+
+func (s *SimplePerm) GetGroup(string) (string, error) {
+	return s.group, nil
+}
+
+func (s *SimplePerm) GetMode(string) (os.FileMode, error) {
+	return os.ModePerm, nil
+}
+
+func (s *SimplePerm) ChOwner(string, string) error {
+	return nil
+}
+
+func (s *SimplePerm) ChGroup(string, string) error {
+	return nil
+}
+
+func (s *SimplePerm) ChMode(string, os.FileMode) error {
+	return nil
+}
