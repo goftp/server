@@ -5,7 +5,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
+	"sync"
 )
 
 // A data socket is used to send non-control data between the client and
@@ -80,6 +80,7 @@ type ftpPassiveSocket struct {
 	ingress chan []byte
 	egress  chan []byte
 	logger  *Logger
+	wg      sync.WaitGroup
 }
 
 func newPassiveSocket(host string, logger *Logger) (DataSocket, error) {
@@ -88,12 +89,8 @@ func newPassiveSocket(host string, logger *Logger) (DataSocket, error) {
 	socket.egress = make(chan []byte)
 	socket.logger = logger
 	socket.host = host
-	go socket.ListenAndServe()
-	for {
-		if socket.Port() > 0 {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
+	if err := socket.GoListenAndServe(); err != nil {
+		return nil, err
 	}
 	return socket, nil
 }
@@ -128,7 +125,7 @@ func (socket *ftpPassiveSocket) Close() error {
 	return nil
 }
 
-func (socket *ftpPassiveSocket) ListenAndServe() {
+func (socket *ftpPassiveSocket) GoListenAndServe() (err error) {
 	laddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:0")
 	if err != nil {
 		socket.logger.Print(err)
@@ -148,26 +145,23 @@ func (socket *ftpPassiveSocket) ListenAndServe() {
 	}
 
 	socket.port = port
-	tcpConn, err := listener.AcceptTCP()
-	if err != nil {
-		socket.logger.Print(err)
-		return
-	}
-	socket.conn = tcpConn
+	socket.wg.Add(1)
+	go func() {
+		tcpConn, err := listener.AcceptTCP()
+		socket.wg.Done()
+		if err != nil {
+			socket.logger.Print(err)
+			return
+		}
+		socket.conn = tcpConn
+	}()
+	return nil
 }
 
 func (socket *ftpPassiveSocket) waitForOpenSocket() bool {
-	retries := 0
-	for {
-		if socket.conn != nil {
-			break
-		}
-		if retries > 3 {
-			socket.logger.Print("socket isn't open")
-			return false
-		}
-		time.Sleep(500 * time.Millisecond)
-		retries += 1
+	if socket.conn != nil {
+		return true
 	}
-	return true
+	socket.wg.Wait()
+	return socket.conn != nil
 }
