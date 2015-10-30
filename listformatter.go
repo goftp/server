@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -20,28 +22,27 @@ func newListFormatter(files []FileInfo) *listFormatter {
 // Short returns a string that lists the collection of files by name only,
 // one per line
 func (formatter *listFormatter) Short() string {
-	output := ""
+	var buf bytes.Buffer
 	for _, file := range formatter.files {
-		output += file.Name() + "\r\n"
+		fmt.Fprintf(&buf, "%s\r\n", file.Name())
 	}
-	output += "\r\n"
-	return output
+	fmt.Fprintf(&buf, "\r\n")
+	return buf.String()
 }
 
 // Detailed returns a string that lists the collection of files with extra
 // detail, one per line
 func (formatter *listFormatter) Detailed() string {
-	output := ""
+	var buf bytes.Buffer
 	for _, file := range formatter.files {
-		output += file.Mode().String()
-		output += " 1 " + file.Owner() + " " + file.Group() + " "
-		output += lpad(strconv.Itoa(int(file.Size())), 12)
-		output += " " + strftime.Format("%b %d %H:%M", file.ModTime())
-		output += " " + file.Name()
-		output += "\r\n"
+		fmt.Fprintf(&buf, file.Mode().String())
+		fmt.Fprintf(&buf, " 1 %s %s ", file.Owner(), file.Group())
+		fmt.Fprintf(&buf, lpad(strconv.Itoa(int(file.Size())), 12))
+		fmt.Fprintf(&buf, strftime.Format(" %b %d %H:%M ", file.ModTime()))
+		fmt.Fprintf(&buf, "%s\r\n", file.Name())
 	}
-	output += "\r\n"
-	return output
+	fmt.Fprintf(&buf, "\r\n")
+	return buf.String()
 }
 
 func lpad(input string, length int) (result string) {
