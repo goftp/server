@@ -9,10 +9,10 @@ import (
 )
 
 func Version() string {
-	return "0.1.0504"
+	return "0.2.1030"
 }
 
-// serverOpts contains parameters for graval.NewServer()
+// serverOpts contains parameters for server.NewServer()
 type ServerOpts struct {
 	// The factory that will be used to create a new FTPDriver instance for
 	// each client connection. This is a mandatory option.
@@ -101,17 +101,17 @@ func serverOptsWithDefaults(opts *ServerOpts) *ServerOpts {
 // probably look something like this:
 //
 //     factory := &MyDriverFactory{}
-//     server  := graval.NewServer(&graval.ServerOpts{ Factory: factory })
+//     server  := server.NewServer(&server.ServerOpts{ Factory: factory })
 //
 // or:
 //
 //     factory := &MyDriverFactory{}
-//     opts    := &graval.ServerOpts{
+//     opts    := &server.ServerOpts{
 //       Factory: factory,
 //       Port: 2000,
 //       Hostname: "127.0.0.1",
 //     }
-//     server  := graval.NewServer(opts)
+//     server  := server.NewServer(opts)
 //
 func NewServer(opts *ServerOpts) *Server {
 	opts = serverOptsWithDefaults(opts)

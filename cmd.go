@@ -308,12 +308,13 @@ func (cmd commandEpsv) RequireAuth() bool {
 
 func (cmd commandEpsv) Execute(conn *Conn, param string) {
 	addr := conn.conn.LocalAddr()
-	parts := strings.Split(addr.String(), ":")
-	if len(parts) != 2 {
+	lastIdx := strings.LastIndex(addr.String(), ":")
+	if lastIdx <= 0 {
 		conn.writeMessage(425, "Data connection failed")
 		return
 	}
-	socket, err := newPassiveSocket(parts[0], conn.logger)
+
+	socket, err := newPassiveSocket(addr.String()[:lastIdx], conn.logger)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
