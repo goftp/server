@@ -63,12 +63,12 @@ func (Conn *Conn) Serve() {
 		}*/
 		line, err := Conn.controlReader.ReadString('\n')
 		if err != nil {
-			if err != io.EOF {
-				Conn.logger.Print(fmt.Sprintln("read error:", err))
-				break
-			} else {
+			if err == io.EOF {
 				continue
 			}
+
+			Conn.logger.Print(fmt.Sprintln("read error:", err))
+			break
 		}
 		Conn.receiveLine(line)
 	}

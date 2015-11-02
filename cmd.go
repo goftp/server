@@ -10,11 +10,11 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/jehiah/go-strftime"
+	"github.com/lunny/log"
 )
 
 type Command interface {
@@ -316,6 +316,7 @@ func (cmd commandEpsv) Execute(conn *Conn, param string) {
 
 	socket, err := newPassiveSocket(addr.String()[:lastIdx], conn.logger)
 	if err != nil {
+		log.Error(err)
 		conn.writeMessage(425, "Data connection failed")
 		return
 	}
