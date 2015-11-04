@@ -356,13 +356,17 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 	if !info.IsDir() {
 		return
 	}
-	files, err := conn.driver.DirContents(path)
+	var files []FileInfo
+	err = conn.driver.ListDir(path, func(f FileInfo) error {
+		files = append(files, f)
+		return nil
+	})
 	if err != nil {
-		//conn.writeMessage()
+		conn.writeMessage(550, err.Error())
 		return
 	}
-	formatter := newListFormatter(files)
-	conn.sendOutofbandData(formatter.Detailed())
+
+	conn.sendOutofbandData(listFormatter(files).Detailed())
 }
 
 // commandNlst responds to the NLST FTP command. It allows the client to
@@ -384,13 +388,16 @@ func (cmd commandNlst) RequireAuth() bool {
 func (cmd commandNlst) Execute(conn *Conn, param string) {
 	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
 	path := conn.buildPath(param)
-	files, err := conn.driver.DirContents(path)
+	var files []FileInfo
+	err := conn.driver.ListDir(path, func(f FileInfo) error {
+		files = append(files, f)
+		return nil
+	})
 	if err != nil {
-		//conn.writeMessage()
+		conn.writeMessage(550, err.Error())
 		return
 	}
-	formatter := newListFormatter(files)
-	conn.sendOutofbandData(formatter.Short())
+	conn.sendOutofbandData(listFormatter(files).Short())
 }
 
 // commandMdtm responds to the MDTM FTP command. It allows the client to
