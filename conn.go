@@ -63,12 +63,12 @@ func (Conn *Conn) Serve() {
 		}*/
 		line, err := Conn.controlReader.ReadString('\n')
 		if err != nil {
-			if err != io.EOF {
-				Conn.logger.Print(fmt.Sprintln("read error:", err))
-				break
-			} else {
+			if err == io.EOF {
 				continue
 			}
+
+			Conn.logger.Print(fmt.Sprintln("read error:", err))
+			break
 		}
 		Conn.receiveLine(line)
 	}
@@ -151,28 +151,27 @@ func (Conn *Conn) buildPath(filename string) (fullPath string) {
 
 // sendOutofbandData will send a string to the client via the currently open
 // data socket. Assumes the socket is open and ready to be used.
-func (Conn *Conn) sendOutofbandData(data string) {
+func (Conn *Conn) sendOutofbandData(data []byte) {
 	bytes := len(data)
-	Conn.dataConn.Write([]byte(data))
+	Conn.dataConn.Write(data)
 	Conn.dataConn.Close()
+	Conn.dataConn = nil
 	message := "Closing data connection, sent " + strconv.Itoa(bytes) + " bytes"
 	Conn.writeMessage(226, message)
 }
 
 func (Conn *Conn) sendOutofBandDataWriter(data io.ReadCloser) error {
-	//defer data.Close()
-	defer func() {
-		Conn.dataConn.Close()
-		Conn.dataConn = nil
-	}()
-
 	Conn.lastFilePos = 0
 	bytes, err := io.Copy(Conn.dataConn, data)
 	if err != nil {
+		Conn.dataConn.Close()
+		Conn.dataConn = nil
 		return err
 	}
 	message := "Closing data connection, sent " + strconv.Itoa(int(bytes)) + " bytes"
 	Conn.writeMessage(226, message)
+	Conn.dataConn.Close()
+	Conn.dataConn = nil
 
 	return nil
 }

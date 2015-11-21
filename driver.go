@@ -23,10 +23,10 @@ type Driver interface {
 	//           requested path
 	ChangeDir(string) error
 
-	// params  - path
-	// returns - a collection of items describing the contents of the requested
+	// params  - path, function on file or subdir found
+	// returns - error
 	//           path
-	DirContents(string) ([]FileInfo, error)
+	ListDir(string, func(FileInfo) error) error
 
 	// params  - path
 	// returns - true if the directory was deleted

@@ -6,7 +6,7 @@ Full documentation for the package is available on [godoc](http://godoc.org/gith
 
 ## Version
 
-    v0.1.0504
+    v0.2.1104
 
 ## Installation
 
