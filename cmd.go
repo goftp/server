@@ -343,10 +343,21 @@ func (cmd commandList) RequireAuth() bool {
 
 func (cmd commandList) Execute(conn *Conn, param string) {
 	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
-	fpath := param
-	if param == "-l" {
-		fpath = conn.namePrefix
+	var fpath string
+	if len(param) == 0 {
+		fpath = param
+	} else {
+		fields := strings.Fields(param)
+		for _, field := range fields {
+			if strings.HasPrefix(field, "-") {
+				//TODO: currently ignore all the flag
+				fpath = conn.namePrefix
+			} else {
+				fpath = field
+			}
+		}
 	}
+
 	path := conn.buildPath(fpath)
 	info, err := conn.driver.Stat(path)
 	if err != nil {
