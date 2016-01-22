@@ -351,7 +351,7 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 		for _, field := range fields {
 			if strings.HasPrefix(field, "-") {
 				//TODO: currently ignore all the flag
-				fpath = conn.namePrefix
+				//fpath = conn.namePrefix
 			} else {
 				fpath = field
 			}
@@ -406,7 +406,7 @@ func (cmd commandNlst) Execute(conn *Conn, param string) {
 		for _, field := range fields {
 			if strings.HasPrefix(field, "-") {
 				//TODO: currently ignore all the flag
-				fpath = conn.namePrefix
+				//fpath = conn.namePrefix
 			} else {
 				fpath = field
 			}
