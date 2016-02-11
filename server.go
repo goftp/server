@@ -200,6 +200,7 @@ func (Server *Server) ListenAndServe() error {
 		driver, err := Server.driverFactory.NewDriver()
 		if err != nil {
 			Server.logger.Print("Error creating driver, aborting client connection")
+			tcpConn.Close()
 		} else {
 			ftpConn := Server.newConn(tcpConn, driver, Server.Auth)
 			go ftpConn.Serve()
