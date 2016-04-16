@@ -151,9 +151,11 @@ func (Conn *Conn) buildPath(filename string) (fullPath string) {
 // data socket. Assumes the socket is open and ready to be used.
 func (Conn *Conn) sendOutofbandData(data []byte) {
 	bytes := len(data)
-	Conn.dataConn.Write(data)
-	Conn.dataConn.Close()
-	Conn.dataConn = nil
+	if Conn.dataConn != nil {
+		Conn.dataConn.Write(data)
+		Conn.dataConn.Close()
+		Conn.dataConn = nil
+	}
 	message := "Closing data connection, sent " + strconv.Itoa(bytes) + " bytes"
 	Conn.writeMessage(226, message)
 }

@@ -53,6 +53,7 @@ type Server struct {
 	listenTo      string
 	driverFactory DriverFactory
 	logger        *Logger
+	listener      net.Listener
 }
 
 // serverOptsWithDefaults copies an ServerOpts struct into a new struct,
@@ -186,20 +187,31 @@ func (Server *Server) ListenAndServe() error {
 
 	Server.logger.Printf("%s listening on %d", Server.Name, Server.Port)
 
+	Server.listener = listener
 	for {
-		tcpConn, err := listener.Accept()
+		tcpConn, err := Server.listener.Accept()
 		if err != nil {
-			Server.logger.Print("listening error")
+			Server.logger.Printf("listening error: %v", err)
 			break
 		}
 		driver, err := Server.driverFactory.NewDriver()
 		if err != nil {
-			Server.logger.Print("Error creating driver, aborting client connection")
-			break
+			Server.logger.Printf("Error creating driver, aborting client connection: %v", err)
+			tcpConn.Close()
+		} else {
+			ftpConn := Server.newConn(tcpConn, driver, Server.Auth)
+			go ftpConn.Serve()
 		}
-		ftpConn := Server.newConn(tcpConn, driver, Server.Auth)
-		go ftpConn.Serve()
 	}
+	return nil
+}
+
+// Gracefully stops a server. Already connected clients will retain their connections
+func (Server *Server) Shutdown() error {
+	if Server.listener != nil {
+		return Server.listener.Close()
+	}
+	// server wasnt even started
 	return nil
 }
 
