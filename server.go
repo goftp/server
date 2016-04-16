@@ -139,6 +139,7 @@ func (server *Server) newConn(tcpConn net.Conn, driver Driver, auth Auth) *Conn 
 	c.server = server
 	c.sessionId = newSessionId()
 	c.logger = newLogger(c.sessionId)
+	driver.Init(c)
 	return c
 }
 
@@ -166,16 +167,10 @@ func simpleTLSConfig(certFile, keyFile string) (*tls.Config, error) {
 // listening on the same port.
 //
 func (Server *Server) ListenAndServe() error {
-	/*laddr, err := net.ResolveTCPAddr("tcp", Server.listenTo)
-	if err != nil {
-		return err
-	}*/
-
 	var listener net.Listener
 	var err error
-	//fmt.Println("-------", *Server.ServerOpts)
+
 	if Server.ServerOpts.TLS {
-		//fmt.Println("use tls")
 		config, err := simpleTLSConfig(Server.CertFile, Server.KeyFile)
 		if err != nil {
 			return err
@@ -200,10 +195,10 @@ func (Server *Server) ListenAndServe() error {
 		driver, err := Server.driverFactory.NewDriver()
 		if err != nil {
 			Server.logger.Print("Error creating driver, aborting client connection")
-		} else {
-			ftpConn := Server.newConn(tcpConn, driver, Server.Auth)
-			go ftpConn.Serve()
+			break
 		}
+		ftpConn := Server.newConn(tcpConn, driver, Server.Auth)
+		go ftpConn.Serve()
 	}
 	return nil
 }

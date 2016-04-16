@@ -12,6 +12,9 @@ type DriverFactory interface {
 // chosen persistence layer. graval will create a new instance of your
 // driver for each client that connects and delegate to it as required.
 type Driver interface {
+	// Init init
+	Init(*Conn)
+
 	// params  - a file path
 	// returns - a time indicating when the requested path was last modified
 	//         - an error if the file doesn't exist or the user lacks

@@ -52,35 +52,33 @@ func newSessionId() string {
 // message when the connection closes. This loop will be running inside a
 // goroutine, so use this channel to be notified when the connection can be
 // cleaned up.
-func (Conn *Conn) Serve() {
-	Conn.logger.Print("Connection Established")
+func (conn *Conn) Serve() {
+	conn.logger.Print("Connection Established")
 	// send welcome
-	Conn.writeMessage(220, Conn.server.WelcomeMessage)
+	conn.writeMessage(220, conn.server.WelcomeMessage)
 	// read commands
 	for {
-		/*if Conn.dataConn == nil {
-			break
-		}*/
-		line, err := Conn.controlReader.ReadString('\n')
+		line, err := conn.controlReader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
 				continue
 			}
 
-			Conn.logger.Print(fmt.Sprintln("read error:", err))
+			conn.logger.Print(fmt.Sprintln("read error:", err))
 			break
 		}
-		Conn.receiveLine(line)
+		conn.receiveLine(line)
 	}
-	Conn.logger.Print("Connection Terminated")
+	conn.Close()
+	conn.logger.Print("Connection Terminated")
 }
 
 // Close will manually close this connection, even if the client isn't ready.
-func (Conn *Conn) Close() {
-	Conn.conn.Close()
-	if Conn.dataConn != nil {
-		Conn.dataConn.Close()
-		Conn.dataConn = nil
+func (conn *Conn) Close() {
+	conn.conn.Close()
+	if conn.dataConn != nil {
+		conn.dataConn.Close()
+		conn.dataConn = nil
 	}
 }
 
