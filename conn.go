@@ -35,6 +35,14 @@ type Conn struct {
 	appendData    bool
 }
 
+func (conn *Conn) LoginUser() string {
+	return conn.user
+}
+
+func (conn *Conn) IsLogin() bool {
+	return len(conn.user) > 0
+}
+
 // returns a random 20 char string that can be used as a unique session ID
 func newSessionId() string {
 	hash := sha256.New()
