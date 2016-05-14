@@ -33,6 +33,7 @@ type Conn struct {
 	renameFrom    string
 	lastFilePos   int64
 	appendData    bool
+	closed        bool
 }
 
 func (conn *Conn) LoginUser() string {
@@ -78,7 +79,7 @@ func (conn *Conn) Serve() {
 		conn.receiveLine(line)
 		// QUIT command closes connection, break to avoid error on reading from
 		// closed socket
-		if conn.dataConn == nil {
+		if conn.closed == true {
 			break
 		}
 	}
@@ -89,6 +90,7 @@ func (conn *Conn) Serve() {
 // Close will manually close this connection, even if the client isn't ready.
 func (conn *Conn) Close() {
 	conn.conn.Close()
+	conn.closed = true
 	if conn.dataConn != nil {
 		conn.dataConn.Close()
 		conn.dataConn = nil
