@@ -76,6 +76,11 @@ func (conn *Conn) Serve() {
 			break
 		}
 		conn.receiveLine(line)
+		// QUIT command closes connection, break to avoid error on reading from
+		// closed socket
+		if conn.dataConn == nil {
+			break
+		}
 	}
 	conn.Close()
 	conn.logger.Print("Connection Terminated")
