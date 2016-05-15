@@ -172,7 +172,8 @@ func (Server *Server) ListenAndServe() error {
 	var err error
 
 	if Server.ServerOpts.TLS {
-		config, err := simpleTLSConfig(Server.CertFile, Server.KeyFile)
+		var config *tls.Config
+		config, err = simpleTLSConfig(Server.CertFile, Server.KeyFile)
 		if err != nil {
 			return err
 		}
