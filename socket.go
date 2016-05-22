@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"errors"
 	"net"
 	"strconv"
@@ -74,16 +75,17 @@ func (socket *ftpActiveSocket) Close() error {
 }
 
 type ftpPassiveSocket struct {
-	conn    *net.TCPConn
-	port    int
-	host    string
-	ingress chan []byte
-	egress  chan []byte
-	logger  *Logger
-	wg      sync.WaitGroup
+	conn       net.Conn
+	port       int
+	host       string
+	ingress    chan []byte
+	egress     chan []byte
+	logger     *Logger
+	wg         sync.WaitGroup
+	tlsConfing *tls.Config
 }
 
-func newPassiveSocket(host string, logger *Logger) (DataSocket, error) {
+func newPassiveSocket(host string, logger *Logger, tlsConfing *tls.Config) (DataSocket, error) {
 	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
@@ -131,11 +133,14 @@ func (socket *ftpPassiveSocket) GoListenAndServe() (err error) {
 		socket.logger.Print(err)
 		return
 	}
-	listener, err := net.ListenTCP("tcp", laddr)
+
+	var listener net.Listener
+	listener, err = net.ListenTCP("tcp", laddr)
 	if err != nil {
 		socket.logger.Print(err)
 		return
 	}
+
 	add := listener.Addr()
 	parts := strings.Split(add.String(), ":")
 	port, err := strconv.Atoi(parts[len(parts)-1])
@@ -146,14 +151,19 @@ func (socket *ftpPassiveSocket) GoListenAndServe() (err error) {
 
 	socket.port = port
 	socket.wg.Add(1)
+
+	if socket.tlsConfing != nil {
+		listener = tls.NewListener(listener, socket.tlsConfing)
+	}
+
 	go func() {
-		tcpConn, err := listener.AcceptTCP()
+		conn, err := listener.Accept()
 		socket.wg.Done()
 		if err != nil {
 			socket.logger.Print(err)
 			return
 		}
-		socket.conn = tcpConn
+		socket.conn = conn
 	}()
 	return nil
 }

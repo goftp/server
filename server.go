@@ -40,6 +40,9 @@ type ServerOpts struct {
 	// if tls used, key file is required
 	KeyFile string
 
+	// If ture TLS is used in RFC4217 mode
+	ExplicitFTPS bool
+
 	WelcomeMessage string
 }
 
@@ -54,6 +57,7 @@ type Server struct {
 	driverFactory DriverFactory
 	logger        *Logger
 	listener      net.Listener
+	tlsConfig     *tls.Config
 }
 
 // serverOptsWithDefaults copies an ServerOpts struct into a new struct,
@@ -93,6 +97,7 @@ func serverOptsWithDefaults(opts *ServerOpts) *ServerOpts {
 	newOpts.TLS = opts.TLS
 	newOpts.KeyFile = opts.KeyFile
 	newOpts.CertFile = opts.CertFile
+	newOpts.ExplicitFTPS = opts.ExplicitFTPS
 
 	return &newOpts
 }
@@ -129,17 +134,18 @@ func NewServer(opts *ServerOpts) *Server {
 // an active net.TCPConn. The TCP connection should already be open before
 // it is handed to this functions. driver is an instance of FTPDriver that
 // will handle all auth and persistence details.
-func (server *Server) newConn(tcpConn net.Conn, driver Driver, auth Auth) *Conn {
+func (server *Server) newConn(tcpConn net.Conn, driver Driver) *Conn {
 	c := new(Conn)
 	c.namePrefix = "/"
 	c.conn = tcpConn
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
 	c.driver = driver
-	c.auth = auth
+	c.auth = server.Auth
 	c.server = server
 	c.sessionId = newSessionId()
 	c.logger = newLogger(c.sessionId)
+	c.tlsConfig = server.tlsConfig
 	driver.Init(c)
 	return c
 }
@@ -172,13 +178,16 @@ func (Server *Server) ListenAndServe() error {
 	var err error
 
 	if Server.ServerOpts.TLS {
-		var config *tls.Config
-		config, err = simpleTLSConfig(Server.CertFile, Server.KeyFile)
+		Server.tlsConfig, err = simpleTLSConfig(Server.CertFile, Server.KeyFile)
 		if err != nil {
 			return err
 		}
 
-		listener, err = tls.Listen("tcp", Server.listenTo, config)
+		if Server.ServerOpts.ExplicitFTPS {
+			listener, err = net.Listen("tcp", Server.listenTo)
+		} else {
+			listener, err = tls.Listen("tcp", Server.listenTo, Server.tlsConfig)
+		}
 	} else {
 		listener, err = net.Listen("tcp", Server.listenTo)
 	}
@@ -200,7 +209,7 @@ func (Server *Server) ListenAndServe() error {
 			Server.logger.Printf("Error creating driver, aborting client connection: %v", err)
 			tcpConn.Close()
 		} else {
-			ftpConn := Server.newConn(tcpConn, driver, Server.Auth)
+			ftpConn := Server.newConn(tcpConn, driver)
 			go ftpConn.Serve()
 		}
 	}
