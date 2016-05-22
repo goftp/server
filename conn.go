@@ -28,7 +28,7 @@ type Conn struct {
 	logger        *Logger
 	server        *Server
 	tlsConfig     *tls.Config
-	sessionId     string
+	sessionID     string
 	namePrefix    string
 	reqUser       string
 	user          string
@@ -48,7 +48,7 @@ func (conn *Conn) IsLogin() bool {
 }
 
 // returns a random 20 char string that can be used as a unique session ID
-func newSessionId() string {
+func newSessionID() string {
 	hash := sha256.New()
 	_, err := io.CopyN(hash, rand.Reader, 50)
 	if err != nil {
@@ -100,39 +100,39 @@ func (conn *Conn) Close() {
 	}
 }
 
-func (Conn *Conn) upgradeToTls() error {
-	Conn.logger.Print("Upgrading connectiion to TLS")
-	tlsConn := tls.Server(Conn.conn, Conn.tlsConfig)
+func (conn *Conn) upgradeToTLS() error {
+	conn.logger.Print("Upgrading connectiion to TLS")
+	tlsConn := tls.Server(conn.conn, conn.tlsConfig)
 	err := tlsConn.Handshake()
 	if err == nil {
-		Conn.conn = tlsConn
-		Conn.controlReader = bufio.NewReader(tlsConn)
-		Conn.controlWriter = bufio.NewWriter(tlsConn)
-		Conn.tls = true
+		conn.conn = tlsConn
+		conn.controlReader = bufio.NewReader(tlsConn)
+		conn.controlWriter = bufio.NewWriter(tlsConn)
+		conn.tls = true
 	}
 	return err
 }
 
 // receiveLine accepts a single line FTP command and co-ordinates an
 // appropriate response.
-func (Conn *Conn) receiveLine(line string) {
-	command, param := Conn.parseLine(line)
-	Conn.logger.PrintCommand(command, param)
+func (conn *Conn) receiveLine(line string) {
+	command, param := conn.parseLine(line)
+	conn.logger.PrintCommand(command, param)
 	cmdObj := commands[strings.ToUpper(command)]
 	if cmdObj == nil {
-		Conn.writeMessage(500, "Command not found")
+		conn.writeMessage(500, "Command not found")
 		return
 	}
 	if cmdObj.RequireParam() && param == "" {
-		Conn.writeMessage(553, "action aborted, required param missing")
-	} else if cmdObj.RequireAuth() && Conn.user == "" {
-		Conn.writeMessage(530, "not logged in")
+		conn.writeMessage(553, "action aborted, required param missing")
+	} else if cmdObj.RequireAuth() && conn.user == "" {
+		conn.writeMessage(530, "not logged in")
 	} else {
-		cmdObj.Execute(Conn, param)
+		cmdObj.Execute(conn, param)
 	}
 }
 
-func (Conn *Conn) parseLine(line string) (string, string) {
+func (conn *Conn) parseLine(line string) (string, string) {
 	params := strings.SplitN(strings.Trim(line, "\r\n"), " ", 2)
 	if len(params) == 1 {
 		return params[0], ""
@@ -141,11 +141,11 @@ func (Conn *Conn) parseLine(line string) (string, string) {
 }
 
 // writeMessage will send a standard FTP response back to the client.
-func (Conn *Conn) writeMessage(code int, message string) (wrote int, err error) {
-	Conn.logger.PrintResponse(code, message)
+func (conn *Conn) writeMessage(code int, message string) (wrote int, err error) {
+	conn.logger.PrintResponse(code, message)
 	line := fmt.Sprintf("%d %s\r\n", code, message)
-	wrote, err = Conn.controlWriter.WriteString(line)
-	Conn.controlWriter.Flush()
+	wrote, err = conn.controlWriter.WriteString(line)
+	conn.controlWriter.Flush()
 	return
 }
 
@@ -166,13 +166,13 @@ func (Conn *Conn) writeMessage(code int, message string) (wrote int, err error) 
 // The driver implementation is responsible for deciding how to treat this path.
 // Obviously they MUST NOT just read the path off disk. The probably want to
 // prefix the path with something to scope the users access to a sandbox.
-func (Conn *Conn) buildPath(filename string) (fullPath string) {
+func (conn *Conn) buildPath(filename string) (fullPath string) {
 	if len(filename) > 0 && filename[0:1] == "/" {
 		fullPath = filepath.Clean(filename)
 	} else if len(filename) > 0 && filename != "-a" {
-		fullPath = filepath.Clean(Conn.namePrefix + "/" + filename)
+		fullPath = filepath.Clean(conn.namePrefix + "/" + filename)
 	} else {
-		fullPath = filepath.Clean(Conn.namePrefix)
+		fullPath = filepath.Clean(conn.namePrefix)
 	}
 	fullPath = strings.Replace(fullPath, "//", "/", -1)
 	return
@@ -180,29 +180,29 @@ func (Conn *Conn) buildPath(filename string) (fullPath string) {
 
 // sendOutofbandData will send a string to the client via the currently open
 // data socket. Assumes the socket is open and ready to be used.
-func (Conn *Conn) sendOutofbandData(data []byte) {
+func (conn *Conn) sendOutofbandData(data []byte) {
 	bytes := len(data)
-	if Conn.dataConn != nil {
-		Conn.dataConn.Write(data)
-		Conn.dataConn.Close()
-		Conn.dataConn = nil
+	if conn.dataConn != nil {
+		conn.dataConn.Write(data)
+		conn.dataConn.Close()
+		conn.dataConn = nil
 	}
 	message := "Closing data connection, sent " + strconv.Itoa(bytes) + " bytes"
-	Conn.writeMessage(226, message)
+	conn.writeMessage(226, message)
 }
 
-func (Conn *Conn) sendOutofBandDataWriter(data io.ReadCloser) error {
-	Conn.lastFilePos = 0
-	bytes, err := io.Copy(Conn.dataConn, data)
+func (conn *Conn) sendOutofBandDataWriter(data io.ReadCloser) error {
+	conn.lastFilePos = 0
+	bytes, err := io.Copy(conn.dataConn, data)
 	if err != nil {
-		Conn.dataConn.Close()
-		Conn.dataConn = nil
+		conn.dataConn.Close()
+		conn.dataConn = nil
 		return err
 	}
 	message := "Closing data connection, sent " + strconv.Itoa(int(bytes)) + " bytes"
-	Conn.writeMessage(226, message)
-	Conn.dataConn.Close()
-	Conn.dataConn = nil
+	conn.writeMessage(226, message)
+	conn.dataConn.Close()
+	conn.dataConn = nil
 
 	return nil
 }

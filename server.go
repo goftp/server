@@ -123,7 +123,7 @@ func NewServer(opts *ServerOpts) *Server {
 	opts = serverOptsWithDefaults(opts)
 	s := new(Server)
 	s.ServerOpts = opts
-	s.listenTo = buildTcpString(opts.Hostname, opts.Port)
+	s.listenTo = buildTCPString(opts.Hostname, opts.Port)
 	s.name = opts.Name
 	s.driverFactory = opts.Factory
 	s.logger = newLogger("")
@@ -143,8 +143,8 @@ func (server *Server) newConn(tcpConn net.Conn, driver Driver) *Conn {
 	c.driver = driver
 	c.auth = server.Auth
 	c.server = server
-	c.sessionId = newSessionId()
-	c.logger = newLogger(c.sessionId)
+	c.sessionID = newSessionID()
+	c.logger = newLogger(c.sessionID)
 	c.tlsConfig = server.tlsConfig
 	driver.Init(c)
 	return c
@@ -173,43 +173,43 @@ func simpleTLSConfig(certFile, keyFile string) (*tls.Config, error) {
 // errors are trying to bind to a privileged port or something else is already
 // listening on the same port.
 //
-func (Server *Server) ListenAndServe() error {
+func (server *Server) ListenAndServe() error {
 	var listener net.Listener
 	var err error
 
-	if Server.ServerOpts.TLS {
-		Server.tlsConfig, err = simpleTLSConfig(Server.CertFile, Server.KeyFile)
+	if server.ServerOpts.TLS {
+		server.tlsConfig, err = simpleTLSConfig(server.CertFile, server.KeyFile)
 		if err != nil {
 			return err
 		}
 
-		if Server.ServerOpts.ExplicitFTPS {
-			listener, err = net.Listen("tcp", Server.listenTo)
+		if server.ServerOpts.ExplicitFTPS {
+			listener, err = net.Listen("tcp", server.listenTo)
 		} else {
-			listener, err = tls.Listen("tcp", Server.listenTo, Server.tlsConfig)
+			listener, err = tls.Listen("tcp", server.listenTo, server.tlsConfig)
 		}
 	} else {
-		listener, err = net.Listen("tcp", Server.listenTo)
+		listener, err = net.Listen("tcp", server.listenTo)
 	}
 	if err != nil {
 		return err
 	}
 
-	Server.logger.Printf("%s listening on %d", Server.Name, Server.Port)
+	server.logger.Printf("%s listening on %d", server.Name, server.Port)
 
-	Server.listener = listener
+	server.listener = listener
 	for {
-		tcpConn, err := Server.listener.Accept()
+		tcpConn, err := server.listener.Accept()
 		if err != nil {
-			Server.logger.Printf("listening error: %v", err)
+			server.logger.Printf("listening error: %v", err)
 			break
 		}
-		driver, err := Server.driverFactory.NewDriver()
+		driver, err := server.driverFactory.NewDriver()
 		if err != nil {
-			Server.logger.Printf("Error creating driver, aborting client connection: %v", err)
+			server.logger.Printf("Error creating driver, aborting client connection: %v", err)
 			tcpConn.Close()
 		} else {
-			ftpConn := Server.newConn(tcpConn, driver)
+			ftpConn := server.newConn(tcpConn, driver)
 			go ftpConn.Serve()
 		}
 	}
@@ -217,15 +217,15 @@ func (Server *Server) ListenAndServe() error {
 }
 
 // Gracefully stops a server. Already connected clients will retain their connections
-func (Server *Server) Shutdown() error {
-	if Server.listener != nil {
-		return Server.listener.Close()
+func (server *Server) Shutdown() error {
+	if server.listener != nil {
+		return server.listener.Close()
 	}
 	// server wasnt even started
 	return nil
 }
 
-func buildTcpString(hostname string, port int) (result string) {
+func buildTCPString(hostname string, port int) (result string) {
 	if strings.Contains(hostname, ":") {
 		// ipv6
 		if port == 0 {

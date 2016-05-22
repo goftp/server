@@ -34,7 +34,7 @@ type ftpActiveSocket struct {
 }
 
 func newActiveSocket(host string, port int, logger *Logger) (DataSocket, error) {
-	connectTo := buildTcpString(host, port)
+	connectTo := buildTCPString(host, port)
 	logger.Print("Opening active data connection to " + connectTo)
 	raddr, err := net.ResolveTCPAddr("tcp", connectTo)
 	if err != nil {

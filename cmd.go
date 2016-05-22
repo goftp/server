@@ -859,7 +859,7 @@ func (cmd commandAuth) Execute(conn *Conn, param string) {
 	log.Println(param, conn)
 	if param == "TLS" && conn.tlsConfig != nil {
 		conn.writeMessage(234, "AUTH command OK")
-		err := conn.upgradeToTls()
+		err := conn.upgradeToTLS()
 		if err != nil {
 			conn.logger.Printf("Error upgrading conection to TLS %v", err)
 		}
