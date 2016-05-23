@@ -40,6 +40,9 @@ type ServerOpts struct {
 	// if tls used, key file is required
 	KeyFile string
 
+	// If ture TLS is used in RFC4217 mode
+	ExplicitFTPS bool
+
 	WelcomeMessage string
 }
 
@@ -54,6 +57,7 @@ type Server struct {
 	driverFactory DriverFactory
 	logger        *Logger
 	listener      net.Listener
+	tlsConfig     *tls.Config
 }
 
 // serverOptsWithDefaults copies an ServerOpts struct into a new struct,
@@ -93,6 +97,7 @@ func serverOptsWithDefaults(opts *ServerOpts) *ServerOpts {
 	newOpts.TLS = opts.TLS
 	newOpts.KeyFile = opts.KeyFile
 	newOpts.CertFile = opts.CertFile
+	newOpts.ExplicitFTPS = opts.ExplicitFTPS
 
 	return &newOpts
 }
@@ -118,7 +123,7 @@ func NewServer(opts *ServerOpts) *Server {
 	opts = serverOptsWithDefaults(opts)
 	s := new(Server)
 	s.ServerOpts = opts
-	s.listenTo = buildTcpString(opts.Hostname, opts.Port)
+	s.listenTo = buildTCPString(opts.Hostname, opts.Port)
 	s.name = opts.Name
 	s.driverFactory = opts.Factory
 	s.logger = newLogger("")
@@ -129,17 +134,18 @@ func NewServer(opts *ServerOpts) *Server {
 // an active net.TCPConn. The TCP connection should already be open before
 // it is handed to this functions. driver is an instance of FTPDriver that
 // will handle all auth and persistence details.
-func (server *Server) newConn(tcpConn net.Conn, driver Driver, auth Auth) *Conn {
+func (server *Server) newConn(tcpConn net.Conn, driver Driver) *Conn {
 	c := new(Conn)
 	c.namePrefix = "/"
 	c.conn = tcpConn
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
 	c.driver = driver
-	c.auth = auth
+	c.auth = server.Auth
 	c.server = server
-	c.sessionId = newSessionId()
-	c.logger = newLogger(c.sessionId)
+	c.sessionID = newSessionID()
+	c.logger = newLogger(c.sessionID)
+	c.tlsConfig = server.tlsConfig
 	driver.Init(c)
 	return c
 }
@@ -167,39 +173,43 @@ func simpleTLSConfig(certFile, keyFile string) (*tls.Config, error) {
 // errors are trying to bind to a privileged port or something else is already
 // listening on the same port.
 //
-func (Server *Server) ListenAndServe() error {
+func (server *Server) ListenAndServe() error {
 	var listener net.Listener
 	var err error
 
-	if Server.ServerOpts.TLS {
-		config, err := simpleTLSConfig(Server.CertFile, Server.KeyFile)
+	if server.ServerOpts.TLS {
+		server.tlsConfig, err = simpleTLSConfig(server.CertFile, server.KeyFile)
 		if err != nil {
 			return err
 		}
 
-		listener, err = tls.Listen("tcp", Server.listenTo, config)
+		if server.ServerOpts.ExplicitFTPS {
+			listener, err = net.Listen("tcp", server.listenTo)
+		} else {
+			listener, err = tls.Listen("tcp", server.listenTo, server.tlsConfig)
+		}
 	} else {
-		listener, err = net.Listen("tcp", Server.listenTo)
+		listener, err = net.Listen("tcp", server.listenTo)
 	}
 	if err != nil {
 		return err
 	}
 
-	Server.logger.Printf("%s listening on %d", Server.Name, Server.Port)
+	server.logger.Printf("%s listening on %d", server.Name, server.Port)
 
-	Server.listener = listener
+	server.listener = listener
 	for {
-		tcpConn, err := Server.listener.Accept()
+		tcpConn, err := server.listener.Accept()
 		if err != nil {
-			Server.logger.Printf("listening error: %v", err)
+			server.logger.Printf("listening error: %v", err)
 			break
 		}
-		driver, err := Server.driverFactory.NewDriver()
+		driver, err := server.driverFactory.NewDriver()
 		if err != nil {
-			Server.logger.Printf("Error creating driver, aborting client connection: %v", err)
+			server.logger.Printf("Error creating driver, aborting client connection: %v", err)
 			tcpConn.Close()
 		} else {
-			ftpConn := Server.newConn(tcpConn, driver, Server.Auth)
+			ftpConn := server.newConn(tcpConn, driver)
 			go ftpConn.Serve()
 		}
 	}
@@ -207,15 +217,15 @@ func (Server *Server) ListenAndServe() error {
 }
 
 // Gracefully stops a server. Already connected clients will retain their connections
-func (Server *Server) Shutdown() error {
-	if Server.listener != nil {
-		return Server.listener.Close()
+func (server *Server) Shutdown() error {
+	if server.listener != nil {
+		return server.listener.Close()
 	}
 	// server wasnt even started
 	return nil
 }
 
-func buildTcpString(hostname string, port int) (result string) {
+func buildTCPString(hostname string, port int) (result string) {
 	if strings.Contains(hostname, ":") {
 		// ipv6
 		if port == 0 {
