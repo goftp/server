@@ -3,6 +3,7 @@ package server
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -33,24 +34,31 @@ type ftpActiveSocket struct {
 	logger *Logger
 }
 
-func newActiveSocket(host string, port int, logger *Logger) (DataSocket, error) {
-	connectTo := buildTCPString(host, port)
+func newActiveSocket(remote string, port int, logger *Logger) (DataSocket, error) {
+	connectTo := buildTCPString(remote, port)
+
 	logger.Print("Opening active data connection to " + connectTo)
+
 	raddr, err := net.ResolveTCPAddr("tcp", connectTo)
+
 	if err != nil {
 		logger.Print(err)
 		return nil, err
 	}
+
 	tcpConn, err := net.DialTCP("tcp", nil, raddr)
+
 	if err != nil {
 		logger.Print(err)
 		return nil, err
 	}
+
 	socket := new(ftpActiveSocket)
 	socket.conn = tcpConn
-	socket.host = host
+	socket.host = remote
 	socket.port = port
 	socket.logger = logger
+
 	return socket, nil
 }
 
@@ -85,12 +93,13 @@ type ftpPassiveSocket struct {
 	tlsConfing *tls.Config
 }
 
-func newPassiveSocket(host string, logger *Logger, tlsConfing *tls.Config) (DataSocket, error) {
+func newPassiveSocket(host string, port int, logger *Logger, tlsConfing *tls.Config) (DataSocket, error) {
 	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
 	socket.logger = logger
 	socket.host = host
+	socket.port = port
 	if err := socket.GoListenAndServe(); err != nil {
 		return nil, err
 	}
@@ -128,7 +137,7 @@ func (socket *ftpPassiveSocket) Close() error {
 }
 
 func (socket *ftpPassiveSocket) GoListenAndServe() (err error) {
-	laddr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:0")
+	laddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("0.0.0.0:%d", socket.port))
 	if err != nil {
 		socket.logger.Print(err)
 		return

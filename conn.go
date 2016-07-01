@@ -8,10 +8,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	mrand "math/rand"
 )
 
 const (
@@ -47,6 +50,24 @@ func (conn *Conn) IsLogin() bool {
 	return len(conn.user) > 0
 }
 
+func (conn *Conn) PublicIp() string {
+	return conn.server.PublicIp
+}
+
+func (conn *Conn) PassivePort() int {
+	portRange := strings.Split(conn.server.PassivePorts, "-")
+
+	if len(portRange) != 2 {
+		log.Println("empty port")
+		return 0
+	}
+
+	minPort, _ := strconv.Atoi(strings.TrimSpace(portRange[0]))
+	maxPort, _ := strconv.Atoi(strings.TrimSpace(portRange[1]))
+
+	return minPort + mrand.Intn(maxPort-minPort)
+}
+
 // returns a random 20 char string that can be used as a unique session ID
 func newSessionID() string {
 	hash := sha256.New()
@@ -72,11 +93,10 @@ func (conn *Conn) Serve() {
 	for {
 		line, err := conn.controlReader.ReadString('\n')
 		if err != nil {
-			if err == io.EOF {
-				continue
+			if err != io.EOF {
+				conn.logger.Print(fmt.Sprintln("read error:", err))
 			}
 
-			conn.logger.Print(fmt.Sprintln("read error:", err))
 			break
 		}
 		conn.receiveLine(line)
