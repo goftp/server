@@ -310,7 +310,7 @@ func (cmd commandEpsv) RequireAuth() bool {
 }
 
 func (cmd commandEpsv) Execute(conn *Conn, param string) {
-	addr := conn.PublicIp()
+	addr := conn.passiveListenIP()
 	lastIdx := strings.LastIndex(addr, ":")
 	if lastIdx <= 0 {
 		conn.writeMessage(425, "Data connection failed")
@@ -367,7 +367,9 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 		conn.writeMessage(550, err.Error())
 		return
 	}
+
 	if !info.IsDir() {
+		conn.logger.Printf("%s is not a dir.\n", path)
 		return
 	}
 	var files []FileInfo
@@ -592,7 +594,8 @@ func (cmd commandPasv) RequireAuth() bool {
 }
 
 func (cmd commandPasv) Execute(conn *Conn, param string) {
-	socket, err := newPassiveSocket(conn.PublicIp(), conn.PassivePort(), conn.logger, conn.tlsConfig)
+	listenIP := conn.passiveListenIP()
+	socket, err := newPassiveSocket(listenIP, conn.PassivePort(), conn.logger, conn.tlsConfig)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -600,7 +603,7 @@ func (cmd commandPasv) Execute(conn *Conn, param string) {
 	conn.dataConn = socket
 	p1 := socket.Port() / 256
 	p2 := socket.Port() - (p1 * 256)
-	quads := strings.Split(conn.PublicIp(), ".")
+	quads := strings.Split(listenIP, ".")
 	target := fmt.Sprintf("(%s,%s,%s,%s,%d,%d)", quads[0], quads[1], quads[2], quads[3], p1, p2)
 	msg := "Entering Passive Mode " + target
 	conn.writeMessage(227, msg)
