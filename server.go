@@ -27,6 +27,12 @@ type ServerOpts struct {
 	// "::", which means all hostnames on ipv4 and ipv6.
 	Hostname string
 
+	// Public IP of the server
+	PublicIp string
+
+	// Passive ports
+	PassivePorts string
+
 	// The port that the FTP should listen on. Optional, defaults to 3000. In
 	// a production environment you will probably want to change this to 21.
 	Port int
@@ -58,6 +64,7 @@ type Server struct {
 	logger        *Logger
 	listener      net.Listener
 	tlsConfig     *tls.Config
+	publicIp      string
 }
 
 // serverOptsWithDefaults copies an ServerOpts struct into a new struct,
@@ -98,6 +105,9 @@ func serverOptsWithDefaults(opts *ServerOpts) *ServerOpts {
 	newOpts.KeyFile = opts.KeyFile
 	newOpts.CertFile = opts.CertFile
 	newOpts.ExplicitFTPS = opts.ExplicitFTPS
+
+	newOpts.PublicIp = opts.PublicIp
+	newOpts.PassivePorts = opts.PassivePorts
 
 	return &newOpts
 }
