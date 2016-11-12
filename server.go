@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"net"
 	"strconv"
-	"strings"
 )
 
 func Version() string {
@@ -133,7 +132,7 @@ func NewServer(opts *ServerOpts) *Server {
 	opts = serverOptsWithDefaults(opts)
 	s := new(Server)
 	s.ServerOpts = opts
-	s.listenTo = buildTCPString(opts.Hostname, opts.Port)
+	s.listenTo = net.JoinHostPort(opts.Hostname, strconv.Itoa(opts.Port))
 	s.name = opts.Name
 	s.driverFactory = opts.Factory
 	s.logger = newLogger("")
@@ -233,23 +232,4 @@ func (server *Server) Shutdown() error {
 	}
 	// server wasnt even started
 	return nil
-}
-
-func buildTCPString(hostname string, port int) (result string) {
-	if strings.Contains(hostname, ":") {
-		// ipv6
-		if port == 0 {
-			result = "[" + hostname + "]"
-		} else {
-			result = "[" + hostname + "]:" + strconv.Itoa(port)
-		}
-	} else {
-		// ipv4
-		if port == 0 {
-			result = hostname
-		} else {
-			result = hostname + ":" + strconv.Itoa(port)
-		}
-	}
-	return
 }
