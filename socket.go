@@ -2,7 +2,6 @@ package server
 
 import (
 	"crypto/tls"
-	"errors"
 	"net"
 	"strconv"
 	"strings"
@@ -89,6 +88,7 @@ type ftpPassiveSocket struct {
 	egress     chan []byte
 	logger     *Logger
 	wg         sync.WaitGroup
+	err        error
 	tlsConfing *tls.Config
 }
 
@@ -114,15 +114,15 @@ func (socket *ftpPassiveSocket) Port() int {
 }
 
 func (socket *ftpPassiveSocket) Read(p []byte) (n int, err error) {
-	if socket.waitForOpenSocket() == false {
-		return 0, errors.New("data socket unavailable")
+	if err := socket.waitForOpenSocket(); err != nil {
+		return 0, err
 	}
 	return socket.conn.Read(p)
 }
 
 func (socket *ftpPassiveSocket) Write(p []byte) (n int, err error) {
-	if socket.waitForOpenSocket() == false {
-		return 0, errors.New("data socket unavailable")
+	if err := socket.waitForOpenSocket(); err != nil {
+		return 0, err
 	}
 	return socket.conn.Write(p)
 }
@@ -168,18 +168,19 @@ func (socket *ftpPassiveSocket) GoListenAndServe() (err error) {
 		conn, err := listener.Accept()
 		socket.wg.Done()
 		if err != nil {
-			socket.logger.Print(err)
+			socket.err = err
 			return
 		}
+		socket.err = nil
 		socket.conn = conn
 	}()
 	return nil
 }
 
-func (socket *ftpPassiveSocket) waitForOpenSocket() bool {
+func (socket *ftpPassiveSocket) waitForOpenSocket() error {
 	if socket.conn != nil {
-		return true
+		return nil
 	}
 	socket.wg.Wait()
-	return socket.conn != nil
+	return socket.err
 }
