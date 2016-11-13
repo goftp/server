@@ -749,11 +749,11 @@ func (cmd commandRnfr) IsExtend() bool {
 }
 
 func (cmd commandRnfr) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnfr) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnfr) Execute(conn *Conn, param string) {
@@ -770,11 +770,11 @@ func (cmd commandRnto) IsExtend() bool {
 }
 
 func (cmd commandRnto) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnto) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnto) Execute(conn *Conn, param string) {
