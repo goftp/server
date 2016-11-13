@@ -238,11 +238,11 @@ func (cmd commandDele) IsExtend() bool {
 }
 
 func (cmd commandDele) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandDele) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandDele) Execute(conn *Conn, param string) {
