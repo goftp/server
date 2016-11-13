@@ -800,11 +800,11 @@ func (cmd commandRmd) IsExtend() bool {
 }
 
 func (cmd commandRmd) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRmd) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRmd) Execute(conn *Conn, param string) {
