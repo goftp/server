@@ -475,11 +475,11 @@ func (cmd commandMkd) IsExtend() bool {
 }
 
 func (cmd commandMkd) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandMkd) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandMkd) Execute(conn *Conn, param string) {
