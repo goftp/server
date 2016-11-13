@@ -551,7 +551,7 @@ func (cmd commandPass) IsExtend() bool {
 }
 
 func (cmd commandPass) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandPass) RequireAuth() bool {
