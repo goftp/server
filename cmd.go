@@ -13,8 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jehiah/go-strftime"
-	"github.com/lunny/log"
+	"log"
 )
 
 type Command interface {
@@ -319,7 +318,7 @@ func (cmd commandEpsv) Execute(conn *Conn, param string) {
 
 	socket, err := newPassiveSocket(addr[:lastIdx], conn.PassivePort(), conn.logger, conn.tlsConfig)
 	if err != nil {
-		log.Error(err)
+		log.Println(err)
 		conn.writeMessage(425, "Data connection failed")
 		return
 	}
@@ -461,7 +460,7 @@ func (cmd commandMdtm) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
 	stat, err := conn.driver.Stat(path)
 	if err == nil {
-		conn.writeMessage(213, strftime.Format("%Y%m%d%H%M%S", stat.ModTime()))
+		conn.writeMessage(213, stat.ModTime().Format("20060102150405"))
 	} else {
 		conn.writeMessage(450, "File not available")
 	}
