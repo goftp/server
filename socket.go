@@ -3,7 +3,6 @@ package server
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -35,7 +34,7 @@ type ftpActiveSocket struct {
 }
 
 func newActiveSocket(remote string, port int, logger *Logger) (DataSocket, error) {
-	connectTo := buildTCPString(remote, port)
+	connectTo := net.JoinHostPort(remote, strconv.Itoa(port))
 
 	logger.Print("Opening active data connection to " + connectTo)
 
@@ -137,7 +136,7 @@ func (socket *ftpPassiveSocket) Close() error {
 }
 
 func (socket *ftpPassiveSocket) GoListenAndServe() (err error) {
-	laddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("0.0.0.0:%d", socket.port))
+	laddr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort("", strconv.Itoa(socket.port)))
 	if err != nil {
 		socket.logger.Print(err)
 		return
