@@ -706,6 +706,7 @@ func (cmd commandRetr) Execute(conn *Conn, param string) {
 	}()
 	bytes, data, err := conn.driver.GetFile(path, conn.lastFilePos)
 	if err == nil {
+		defer data.Close()
 		conn.writeMessage(150, fmt.Sprintf("Data transfer starting %v bytes", bytes))
 		err = conn.sendOutofBandDataWriter(data)
 	} else {
