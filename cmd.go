@@ -1079,7 +1079,7 @@ func (cmd commandSyst) IsExtend() bool {
 }
 
 func (cmd commandSyst) RequireParam() bool {
-	return true
+	return false
 }
 
 func (cmd commandSyst) RequireAuth() bool {
