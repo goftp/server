@@ -238,11 +238,11 @@ func (cmd commandDele) IsExtend() bool {
 }
 
 func (cmd commandDele) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandDele) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandDele) Execute(conn *Conn, param string) {
@@ -475,11 +475,11 @@ func (cmd commandMkd) IsExtend() bool {
 }
 
 func (cmd commandMkd) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandMkd) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandMkd) Execute(conn *Conn, param string) {
@@ -551,7 +551,7 @@ func (cmd commandPass) IsExtend() bool {
 }
 
 func (cmd commandPass) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandPass) RequireAuth() bool {
@@ -750,11 +750,11 @@ func (cmd commandRnfr) IsExtend() bool {
 }
 
 func (cmd commandRnfr) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnfr) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnfr) Execute(conn *Conn, param string) {
@@ -771,11 +771,11 @@ func (cmd commandRnto) IsExtend() bool {
 }
 
 func (cmd commandRnto) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnto) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnto) Execute(conn *Conn, param string) {
@@ -801,11 +801,11 @@ func (cmd commandRmd) IsExtend() bool {
 }
 
 func (cmd commandRmd) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRmd) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRmd) Execute(conn *Conn, param string) {
