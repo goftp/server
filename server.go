@@ -57,13 +57,10 @@ type ServerOpts struct {
 // Always use the NewServer() method to create a new Server.
 type Server struct {
 	*ServerOpts
-	name          string
-	listenTo      string
-	driverFactory DriverFactory
-	logger        *Logger
-	listener      net.Listener
-	tlsConfig     *tls.Config
-	publicIp      string
+	listenTo  string
+	logger    *Logger
+	listener  net.Listener
+	tlsConfig *tls.Config
 }
 
 // serverOptsWithDefaults copies an ServerOpts struct into a new struct,
@@ -133,8 +130,6 @@ func NewServer(opts *ServerOpts) *Server {
 	s := new(Server)
 	s.ServerOpts = opts
 	s.listenTo = net.JoinHostPort(opts.Hostname, strconv.Itoa(opts.Port))
-	s.name = opts.Name
-	s.driverFactory = opts.Factory
 	s.logger = newLogger("")
 	return s
 }
@@ -213,7 +208,7 @@ func (server *Server) ListenAndServe() error {
 			server.logger.Printf("listening error: %v", err)
 			break
 		}
-		driver, err := server.driverFactory.NewDriver()
+		driver, err := server.Factory.NewDriver()
 		if err != nil {
 			server.logger.Printf("Error creating driver, aborting client connection: %v", err)
 			tcpConn.Close()
