@@ -8,7 +8,7 @@ import (
 )
 
 func Version() string {
-	return "0.2.1104"
+	return "0.2.2"
 }
 
 // serverOpts contains parameters for server.NewServer()
@@ -49,6 +49,9 @@ type ServerOpts struct {
 	ExplicitFTPS bool
 
 	WelcomeMessage string
+
+	// A logger implementation, if nil the StdLogger is used
+	Logger Logger
 }
 
 // Server is the root of your FTP application. You should instantiate one
@@ -58,7 +61,7 @@ type ServerOpts struct {
 type Server struct {
 	*ServerOpts
 	listenTo  string
-	logger    *Logger
+	logger    Logger
 	listener  net.Listener
 	tlsConfig *tls.Config
 }
@@ -97,6 +100,11 @@ func serverOptsWithDefaults(opts *ServerOpts) *ServerOpts {
 		newOpts.Auth = opts.Auth
 	}
 
+	newOpts.Logger = &StdLogger{}
+	if opts.Logger != nil {
+		newOpts.Logger = opts.Logger
+	}
+
 	newOpts.TLS = opts.TLS
 	newOpts.KeyFile = opts.KeyFile
 	newOpts.CertFile = opts.CertFile
@@ -130,7 +138,7 @@ func NewServer(opts *ServerOpts) *Server {
 	s := new(Server)
 	s.ServerOpts = opts
 	s.listenTo = net.JoinHostPort(opts.Hostname, strconv.Itoa(opts.Port))
-	s.logger = newLogger("")
+	s.logger = opts.Logger
 	return s
 }
 
@@ -148,7 +156,7 @@ func (server *Server) newConn(tcpConn net.Conn, driver Driver) *Conn {
 	c.auth = server.Auth
 	c.server = server
 	c.sessionID = newSessionID()
-	c.logger = newLogger(c.sessionID)
+	c.logger = server.logger
 	c.tlsConfig = server.tlsConfig
 	driver.Init(c)
 	return c
@@ -199,18 +207,19 @@ func (server *Server) ListenAndServe() error {
 		return err
 	}
 
-	server.logger.Printf("%s listening on %d", server.Name, server.Port)
+	sessionID := ""
+	server.logger.Printf(sessionID, "%s listening on %d", server.Name, server.Port)
 
 	server.listener = listener
 	for {
 		tcpConn, err := server.listener.Accept()
 		if err != nil {
-			server.logger.Printf("listening error: %v", err)
+			server.logger.Printf(sessionID, "listening error: %v", err)
 			break
 		}
 		driver, err := server.Factory.NewDriver()
 		if err != nil {
-			server.logger.Printf("Error creating driver, aborting client connection: %v", err)
+			server.logger.Printf(sessionID, "Error creating driver, aborting client connection: %v", err)
 			tcpConn.Close()
 		} else {
 			ftpConn := server.newConn(tcpConn, driver)

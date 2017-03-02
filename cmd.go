@@ -282,7 +282,7 @@ func (cmd commandEprt) Execute(conn *Conn, param string) {
 		conn.writeMessage(522, "Network protocol not supported, use (1,2)")
 		return
 	}
-	socket, err := newActiveSocket(host, port, conn.logger)
+	socket, err := newActiveSocket(host, port, conn.logger, conn.sessionID)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -316,7 +316,7 @@ func (cmd commandEpsv) Execute(conn *Conn, param string) {
 		return
 	}
 
-	socket, err := newPassiveSocket(addr[:lastIdx], conn.PassivePort(), conn.logger, conn.tlsConfig)
+	socket, err := newPassiveSocket(addr[:lastIdx], conn.PassivePort(), conn.logger, conn.sessionID, conn.tlsConfig)
 	if err != nil {
 		log.Println(err)
 		conn.writeMessage(425, "Data connection failed")
@@ -368,7 +368,7 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 	}
 
 	if !info.IsDir() {
-		conn.logger.Printf("%s is not a dir.\n", path)
+		conn.logger.Printf(conn.sessionID, "%s is not a dir.\n", path)
 		return
 	}
 	var files []FileInfo
@@ -594,7 +594,7 @@ func (cmd commandPasv) RequireAuth() bool {
 
 func (cmd commandPasv) Execute(conn *Conn, param string) {
 	listenIP := conn.passiveListenIP()
-	socket, err := newPassiveSocket(listenIP, conn.PassivePort(), conn.logger, conn.tlsConfig)
+	socket, err := newPassiveSocket(listenIP, conn.PassivePort(), conn.logger, conn.sessionID, conn.tlsConfig)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -632,7 +632,7 @@ func (cmd commandPort) Execute(conn *Conn, param string) {
 	portTwo, _ := strconv.Atoi(nums[5])
 	port := (portOne * 256) + portTwo
 	host := nums[0] + "." + nums[1] + "." + nums[2] + "." + nums[3]
-	socket, err := newActiveSocket(host, port, conn.logger)
+	socket, err := newActiveSocket(host, port, conn.logger, conn.sessionID)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -856,7 +856,7 @@ func (cmd commandAuth) Execute(conn *Conn, param string) {
 		conn.writeMessage(234, "AUTH command OK")
 		err := conn.upgradeToTLS()
 		if err != nil {
-			conn.logger.Printf("Error upgrading conection to TLS %v", err)
+			conn.logger.Printf("Error upgrading connection to TLS %v", err.Error())
 		}
 	} else {
 		conn.writeMessage(550, "Action not taken")
