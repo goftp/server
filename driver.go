@@ -51,7 +51,7 @@ type Driver interface {
 	// returns - a string containing the file data to send to the client
 	GetFile(string, int64) (int64, io.ReadCloser, error)
 
-	// params  - desination path, an io.Reader containing the file data
+	// params  - destination path, an io.Reader containing the file data
 	// returns - true if the data was successfully persisted
 	PutFile(string, io.Reader, bool) (int64, error)
 }
