@@ -161,7 +161,7 @@ func (cmd commandFeat) RequireAuth() bool {
 }
 
 var (
-	feats    = "211-Extensions supported:\n%s211 END"
+	feats    = "Extensions supported:\n%s"
 	featCmds = ""
 )
 
@@ -177,7 +177,7 @@ func (cmd commandFeat) Execute(conn *Conn, param string) {
 	if conn.tlsConfig != nil {
 		featCmds += " AUTH TLS\n PBSZ\n PROT\n"
 	}
-	conn.writeMessage(211, fmt.Sprintf(feats, featCmds))
+	conn.writeMessageMultiline(211, fmt.Sprintf(feats, featCmds))
 }
 
 // cmdCdup responds to the CDUP FTP command.

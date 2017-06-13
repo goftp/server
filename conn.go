@@ -180,6 +180,15 @@ func (conn *Conn) writeMessage(code int, message string) (wrote int, err error) 
 	return
 }
 
+// writeMessage will send a standard FTP response back to the client.
+func (conn *Conn) writeMessageMultiline(code int, message string) (wrote int, err error) {
+	conn.logger.PrintResponse(conn.sessionID, code, message)
+	line := fmt.Sprintf("%d-%s\r\n%d END\r\n", code, message, code)
+	wrote, err = conn.controlWriter.WriteString(line)
+	conn.controlWriter.Flush()
+	return
+}
+
 // buildPath takes a client supplied path or filename and generates a safe
 // absolute path within their account sandbox.
 //
