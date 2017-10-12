@@ -928,7 +928,7 @@ func (cmd commandPbsz) RequireParam() bool {
 }
 
 func (cmd commandPbsz) RequireAuth() bool {
-	return true
+	return false
 }
 
 func (cmd commandPbsz) Execute(conn *Conn, param string) {
@@ -950,7 +950,7 @@ func (cmd commandProt) RequireParam() bool {
 }
 
 func (cmd commandProt) RequireAuth() bool {
-	return true
+	return false
 }
 
 func (cmd commandProt) Execute(conn *Conn, param string) {
