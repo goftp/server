@@ -89,16 +89,17 @@ type ftpPassiveSocket struct {
 	logger     Logger
 	wg         sync.WaitGroup
 	err        error
-	tlsConfing *tls.Config
+	tlsConfig  *tls.Config
 }
 
-func newPassiveSocket(host string, port int, logger Logger, sessionID string, tlsConfing *tls.Config) (DataSocket, error) {
+func newPassiveSocket(host string, port int, logger Logger, sessionID string, tlsConfig *tls.Config) (DataSocket, error) {
 	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
 	socket.logger = logger
 	socket.host = host
 	socket.port = port
+	socket.tlsConfig = tlsConfig
 	if err := socket.GoListenAndServe(sessionID); err != nil {
 		return nil, err
 	}
@@ -160,8 +161,8 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 	socket.port = port
 	socket.wg.Add(1)
 
-	if socket.tlsConfing != nil {
-		listener = tls.NewListener(listener, socket.tlsConfing)
+	if socket.tlsConfig != nil {
+		listener = tls.NewListener(listener, socket.tlsConfig)
 	}
 
 	go func() {
