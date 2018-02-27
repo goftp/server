@@ -366,7 +366,7 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 		return
 	}
 
-	if !info.IsDir() {
+	if info == nil || !info.IsDir() {
 		conn.logger.Printf(conn.sessionID, "%s is not a dir.\n", path)
 		return
 	}
