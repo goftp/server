@@ -1,6 +1,7 @@
 package server_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -23,6 +24,8 @@ func (a *TestAuth) CheckPasswd(name, pass string) (bool, error) {
 }
 
 func runServer(t *testing.T, execute func()) {
+	os.MkdirAll("./testdata", os.ModePerm)
+
 	var perm = server.NewSimplePerm("test", "test")
 	opt := &server.ServerOpts{
 		Name: "test ftpd",
