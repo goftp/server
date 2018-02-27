@@ -27,8 +27,8 @@ func runServer(t *testing.T, execute func()) {
 	opt := &server.ServerOpts{
 		Name: "test ftpd",
 		Factory: &filedriver.FileDriverFactory{
-			"./testdata",
-			perm,
+			RootPath: "./testdata",
+			Perm:     perm,
 		},
 		Port: 2121,
 		Auth: &TestAuth{
@@ -45,7 +45,7 @@ func runServer(t *testing.T, execute func()) {
 
 	execute()
 
-	server.Shutdown()
+	assert.NoError(t, server.Shutdown())
 }
 
 func TestConnect(t *testing.T) {

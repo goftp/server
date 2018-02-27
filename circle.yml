@@ -7,6 +7,7 @@ dependencies:
 test:
   override:
     # './...' is a relative pattern which means all subdirectories
-    - go test -v -race -coverprofile=coverage.txt -covermode=atomic
+    # - go test -v -race -coverprofile=coverage.txt -covermode=atomic
+    - go test -v -coverprofile=coverage.txt -covermode=atomic
   post:
     - bash <(curl -s https://codecov.io/bash)
