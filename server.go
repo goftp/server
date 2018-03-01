@@ -186,6 +186,7 @@ func simpleTLSConfig(certFile, keyFile string) (*tls.Config, error) {
 // listening on the same port.
 //
 func (server *Server) ListenAndServe() error {
+		
 	var listener net.Listener
 	var err error
 
@@ -231,6 +232,8 @@ func (server *Server) ListenAndServe() error {
 
 // Gracefully stops a server. Already connected clients will retain their connections
 func (server *Server) Shutdown() error {
+	mutex.Lock()
+	defer mutex.Unlock()
 	if server.listener != nil {
 		return server.listener.Close()
 	}

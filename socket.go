@@ -32,6 +32,8 @@ type ftpActiveSocket struct {
 	logger Logger
 }
 
+var mutex sync.Mutex
+
 func newActiveSocket(remote string, port int, logger Logger, sessionID string) (DataSocket, error) {
 	connectTo := net.JoinHostPort(remote, strconv.Itoa(port))
 
@@ -114,6 +116,8 @@ func (socket *ftpPassiveSocket) Port() int {
 }
 
 func (socket *ftpPassiveSocket) Read(p []byte) (n int, err error) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	if err := socket.waitForOpenSocket(); err != nil {
 		return 0, err
 	}
@@ -165,6 +169,9 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 	}
 
 	go func() {
+		mutex.Lock()
+		defer mutex.Unlock()
+
 		conn, err := listener.Accept()
 		socket.wg.Done()
 		if err != nil {
