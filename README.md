@@ -1,5 +1,8 @@
 # server
 
+[![CircleCI](https://circleci.com/gh/goftp/server.svg?style=shield)](https://circleci.com/gh/goftp/server)  [![codecov](https://codecov.io/gh/goftp/server/branch/master/graph/badge.svg)](https://codecov.io/gh/goftp/server)
+[![](https://goreportcard.com/badge/github.com/goftp/server)](https://goreportcard.com/report/github.com/goftp/server)
+
 A FTP server framework forked from [github.com/yob/graval](http://github.com/yob/graval) and changed a lot.
 
 Full documentation for the package is available on [godoc](http://godoc.org/github.com/goftp/server)
