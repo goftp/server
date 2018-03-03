@@ -87,7 +87,7 @@ type ftpPassiveSocket struct {
 	ingress    chan []byte
 	egress     chan []byte
 	logger     Logger
-	wg         sync.WaitGroup
+	lock       sync.Mutex
 	err        error
 	tlsConfing *tls.Config
 }
@@ -128,7 +128,6 @@ func (socket *ftpPassiveSocket) Write(p []byte) (n int, err error) {
 }
 
 func (socket *ftpPassiveSocket) Close() error {
-	//socket.logger.Print("closing passive data socket")
 	if socket.conn != nil {
 		return socket.conn.Close()
 	}
@@ -158,15 +157,15 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 	}
 
 	socket.port = port
-	socket.wg.Add(1)
-
 	if socket.tlsConfing != nil {
 		listener = tls.NewListener(listener, socket.tlsConfing)
 	}
 
 	go func() {
+		socket.lock.Lock()
+		defer socket.lock.Unlock()
+
 		conn, err := listener.Accept()
-		socket.wg.Done()
 		if err != nil {
 			socket.err = err
 			return
@@ -178,9 +177,10 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 }
 
 func (socket *ftpPassiveSocket) waitForOpenSocket() error {
+	socket.lock.Lock()
+	defer socket.lock.Unlock()
 	if socket.conn != nil {
 		return nil
 	}
-	socket.wg.Wait()
 	return socket.err
 }
