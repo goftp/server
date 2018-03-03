@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	filedriver "github.com/goftp/file-driver"
 	"github.com/goftp/server"
@@ -53,13 +54,21 @@ func runServer(t *testing.T, execute func()) {
 
 func TestConnect(t *testing.T) {
 	runServer(t, func() {
-		ftp, err := ftp.Connect("localhost:2121")
-		assert.NoError(t, err)
+		// Give server 0.5 seconds to get to the listening state
+		timeout := time.NewTimer(time.Millisecond * 500)
+		for {
+			f, err := ftp.Connect("localhost:2121")
+			if err != nil && len(timeout.C) == 0 { // Retry errors
+				continue
+			}
+			assert.NoError(t, err)
 
-		assert.NoError(t, ftp.Login("admin", "admin"))
-		assert.Error(t, ftp.Login("admin", ""))
+			assert.NoError(t, f.Login("admin", "admin"))
+			assert.Error(t, f.Login("admin", ""))
 
-		var content = `test`
-		assert.NoError(t, ftp.Stor("server_test.go", strings.NewReader(content)))
+			var content = `test`
+			assert.NoError(t, f.Stor("server_test.go", strings.NewReader(content)))
+			break
+		}
 	})
 }
