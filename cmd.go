@@ -343,7 +343,6 @@ func (cmd commandList) RequireAuth() bool {
 }
 
 func (cmd commandList) Execute(conn *Conn, param string) {
-	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
 	var fpath string
 	if len(param) == 0 {
 		fpath = param
@@ -380,6 +379,7 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 		return
 	}
 
+	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
 	conn.sendOutofbandData(listFormatter(files).Detailed())
 }
 
