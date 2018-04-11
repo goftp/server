@@ -32,19 +32,19 @@ type Driver interface {
 	ListDir(string, func(FileInfo) error) error
 
 	// params  - path
-	// returns - true if the directory was deleted
+	// returns - nil if the directory was deleted or any error encountered
 	DeleteDir(string) error
 
 	// params  - path
-	// returns - true if the file was deleted
+	// returns - nil if the file was deleted or any error encountered
 	DeleteFile(string) error
 
 	// params  - from_path, to_path
-	// returns - true if the file was renamed
+	// returns - nil if the file was renamed or any error encountered
 	Rename(string, string) error
 
 	// params  - path
-	// returns - true if the new directory was created
+	// returns - nil if the new directory was created or any error encountered
 	MakeDir(string) error
 
 	// params  - path
@@ -52,6 +52,6 @@ type Driver interface {
 	GetFile(string, int64) (int64, io.ReadCloser, error)
 
 	// params  - destination path, an io.Reader containing the file data
-	// returns - true if the data was successfully persisted
+	// returns - the number of bytes writen and the first error encountered while writing, if any. 
 	PutFile(string, io.Reader, bool) (int64, error)
 }
