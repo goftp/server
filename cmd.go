@@ -373,16 +373,15 @@ func parseListParam(param string) (path string) {
 		path = param
 	} else {
 		fields := strings.Fields(param)
+		i := 0
 		for _, field := range fields {
-			if strings.HasPrefix(field, "-") {
-				//TODO: currently ignore all the flag
-				//fpath = conn.namePrefix
-			} else {
-				path = field
+			if !strings.HasPrefix(field, "-") {
+				break
 			}
+			i = strings.LastIndex(param, " "+field) + len(field) + 1
 		}
+		path = strings.TrimLeft(param[i:], " ") //Get all the path even with space inside
 	}
-	log.Println("DEBUG parseListParam : '", param, "' '", path, "'")
 	return path
 }
 

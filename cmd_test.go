@@ -8,7 +8,10 @@ func TestParseListParam(t *testing.T) {
 		expected string // expected result
 	}{
 		{".", "."},
+		{"-la", ""},
 		{"rclone-test-qumelah4himezac1bogajow0", "rclone-test-qumelah4himezac1bogajow0"},
+		{"-la rclone-test-qumelah4himezac1bogajow0", "rclone-test-qumelah4himezac1bogajow0"},
+		{"-al rclone-test-qumelah4himezac1bogajow0", "rclone-test-qumelah4himezac1bogajow0"},
 		{"rclone-test-goximif1kinarez5fakayuw7/new_name/sub_new_name", "rclone-test-goximif1kinarez5fakayuw7/new_name/sub_new_name"},
 		{"rclone-test-qumelah4himezac1bogajow0/hello? sausage", "rclone-test-qumelah4himezac1bogajow0/hello? sausage"},
 		{"rclone-test-qumelah4himezac1bogajow0/hello? sausage/êé/Hello, 世界/ \" ' @ < > & ? + ≠", "rclone-test-qumelah4himezac1bogajow0/hello? sausage/êé/Hello, 世界/ \" ' @ < > & ? + ≠"},
@@ -16,7 +19,7 @@ func TestParseListParam(t *testing.T) {
 		{"rclone-test-qumelah4himezac1bogajow0/piped data.txt", "rclone-test-qumelah4himezac1bogajow0/piped data.txt"},
 		{"rclone-test-qumelah4himezac1bogajow0/not found.txt", "rclone-test-qumelah4himezac1bogajow0/not found.txt"},
 	}
-	//TODO add params -al
+
 	for _, tt := range paramTests {
 		path := parseListParam(tt.param)
 		if path != tt.expected {
