@@ -9,6 +9,7 @@ func TestParseListParam(t *testing.T) {
 	}{
 		{".", "."},
 		{"-la", ""},
+		{"-al", ""},
 		{"rclone-test-qumelah4himezac1bogajow0", "rclone-test-qumelah4himezac1bogajow0"},
 		{"-la rclone-test-qumelah4himezac1bogajow0", "rclone-test-qumelah4himezac1bogajow0"},
 		{"-al rclone-test-qumelah4himezac1bogajow0", "rclone-test-qumelah4himezac1bogajow0"},
