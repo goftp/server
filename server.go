@@ -7,11 +7,12 @@ import (
 	"strconv"
 )
 
+// Version returns the library version
 func Version() string {
-	return "0.2.2"
+	return "0.2.3"
 }
 
-// serverOpts contains parameters for server.NewServer()
+// ServerOpts contains parameters for server.NewServer()
 type ServerOpts struct {
 	// The factory that will be used to create a new FTPDriver instance for
 	// each client connection. This is a mandatory option.

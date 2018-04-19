@@ -68,6 +68,11 @@ func TestConnect(t *testing.T) {
 
 			var content = `test`
 			assert.NoError(t, f.Stor("server_test.go", strings.NewReader(content)))
+
+			names, err := f.NameList("/")
+			assert.NoError(t, err)
+			assert.EqualValues(t, 1, len(names))
+			assert.EqualValues(t, "server_test.go", names[0])
 			break
 		}
 	})

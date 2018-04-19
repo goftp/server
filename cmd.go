@@ -409,7 +409,7 @@ func (cmd commandNlst) Execute(conn *Conn, param string) {
 		return
 	}
 	if !info.IsDir() {
-		// TODO: should we show the file description?
+		conn.writeMessage(550, param+" is not a directory")
 		return
 	}
 
