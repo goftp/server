@@ -73,6 +73,37 @@ func TestConnect(t *testing.T) {
 			assert.NoError(t, err)
 			assert.EqualValues(t, 1, len(names))
 			assert.EqualValues(t, "server_test.go", names[0])
+
+			entries, err := f.List("/")
+			assert.NoError(t, err)
+			assert.EqualValues(t, 1, len(entries))
+			assert.EqualValues(t, "server_test.go", entries[0].Name)
+			assert.EqualValues(t, 4, entries[0].Size)
+			assert.EqualValues(t, ftp.EntryTypeFile, entries[0].Type)
+
+			curDir, err := f.CurrentDir()
+			assert.NoError(t, err)
+			assert.EqualValues(t, "/", curDir)
+
+			size, err := f.FileSize("/server_test.go")
+			assert.NoError(t, err)
+			assert.EqualValues(t, 4, size)
+
+			err = f.Rename("/server_test.go", "/server.test.go")
+			assert.NoError(t, err)
+
+			err = f.MakeDir("/src")
+			assert.NoError(t, err)
+
+			err = f.Delete("/server.test.go")
+			assert.NoError(t, err)
+
+			err = f.Delete("/src")
+			assert.Error(t, err)
+
+			//err = f.RemoveDir("/src")
+			//assert.NoError(t, err)
+
 			break
 		}
 	})
