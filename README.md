@@ -1,6 +1,6 @@
 # server
 
-[![CircleCI](https://circleci.com/gh/goftp/server.svg?style=shield)](https://circleci.com/gh/goftp/server)  [![codecov](https://codecov.io/gh/goftp/server/branch/master/graph/badge.svg)](https://codecov.io/gh/goftp/server)
+[![CircleCI](https://circleci.com/gh/goftp/server.svg?style=shield)](https://circleci.com/gh/goftp/server)
 [![](https://goreportcard.com/badge/github.com/goftp/server)](https://goreportcard.com/report/github.com/goftp/server)
 [![codecov](https://codecov.io/gh/goftp/server/branch/master/graph/badge.svg)](https://codecov.io/gh/goftp/server)
 
