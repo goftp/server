@@ -199,7 +199,7 @@ func (conn *Conn) writeMessageMultiline(code int, message string) (wrote int, er
 //    buildpath("/files/two.txt")
 //    => "/files/two.txt"
 //    buildpath("files/two.txt")
-//    => "files/two.txt"
+//    => "/files/two.txt"
 //    buildpath("/../../../../etc/passwd")
 //    => "/etc/passwd"
 //
