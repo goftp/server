@@ -1,3 +1,7 @@
+// Copyright 2018 The goftp Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package server
 
 import (
@@ -9,7 +13,7 @@ import (
 
 // Version returns the library version
 func Version() string {
-	return "0.2.3"
+	return "0.3.0"
 }
 
 // ServerOpts contains parameters for server.NewServer()
@@ -230,7 +234,7 @@ func (server *Server) ListenAndServe() error {
 	return nil
 }
 
-// Gracefully stops a server. Already connected clients will retain their connections
+// Shutdown will gracefully stop a server. Already connected clients will retain their connections
 func (server *Server) Shutdown() error {
 	if server.listener != nil {
 		return server.listener.Close()

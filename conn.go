@@ -1,3 +1,7 @@
+// Copyright 2018 The goftp Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package server
 
 import (
@@ -9,12 +13,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	mrand "math/rand"
 	"net"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	mrand "math/rand"
 )
 
 const (

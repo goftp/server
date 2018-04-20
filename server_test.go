@@ -1,3 +1,7 @@
+// Copyright 2018 The goftp Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package server_test
 
 import (
@@ -12,18 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type TestAuth struct {
-	Name     string
-	Password string
-}
-
-func (a *TestAuth) CheckPasswd(name, pass string) (bool, error) {
-	if name != a.Name || pass != a.Password {
-		return false, nil
-	}
-	return true, nil
-}
-
 func runServer(t *testing.T, execute func()) {
 	os.MkdirAll("./testdata", os.ModePerm)
 
@@ -35,7 +27,7 @@ func runServer(t *testing.T, execute func()) {
 			Perm:     perm,
 		},
 		Port: 2121,
-		Auth: &TestAuth{
+		Auth: &server.SimpleAuth{
 			Name:     "admin",
 			Password: "admin",
 		},
