@@ -89,6 +89,15 @@ func TestConnect(t *testing.T) {
 			assert.NoError(t, err)
 			assert.EqualValues(t, 4, size)
 
+			/*resp, err := f.RetrFrom("/server_test.go", 0)
+			assert.NoError(t, err)
+			var buf []byte
+			l, err := resp.Read(buf)
+			assert.NoError(t, err)
+			assert.EqualValues(t, 4, l)
+			assert.EqualValues(t, 4, len(buf))
+			assert.EqualValues(t, content, string(buf))*/
+
 			err = f.Rename("/server_test.go", "/server.test.go")
 			assert.NoError(t, err)
 
@@ -98,11 +107,11 @@ func TestConnect(t *testing.T) {
 			err = f.Delete("/server.test.go")
 			assert.NoError(t, err)
 
-			err = f.Delete("/src")
-			assert.Error(t, err)
+			err = f.RemoveDir("/src")
+			assert.NoError(t, err)
 
-			//err = f.RemoveDir("/src")
-			//assert.NoError(t, err)
+			err = f.Quit()
+			assert.NoError(t, err)
 
 			break
 		}
