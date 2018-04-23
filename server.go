@@ -215,7 +215,15 @@ func (server *Server) ListenAndServe() error {
 	sessionID := ""
 	server.logger.Printf(sessionID, "%s listening on %d", server.Name, server.Port)
 
-	server.listener = listener
+	return server.Serve(listener)
+}
+
+// Serve accepts connections on a given net.Listener and handles each
+// request in a new goroutine.
+//
+func (server *Server) Serve(l net.Listener) error {
+	server.listener = l
+	sessionID := ""
 	for {
 		tcpConn, err := server.listener.Accept()
 		if err != nil {

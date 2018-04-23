@@ -5,6 +5,7 @@
 package server_test
 
 import (
+	"net"
 	"os"
 	"strings"
 	"testing"
@@ -108,4 +109,53 @@ func TestConnect(t *testing.T) {
 			break
 		}
 	})
+}
+
+func TestServe(t *testing.T) {
+	os.MkdirAll("./testdata", os.ModePerm)
+
+	var perm = server.NewSimplePerm("test", "test")
+
+	// Server options without hostname or port
+	opt := &server.ServerOpts{
+		Name: "test ftpd",
+		Factory: &filedriver.FileDriverFactory{
+			RootPath: "./testdata",
+			Perm:     perm,
+		},
+		Auth: &server.SimpleAuth{
+			Name:     "admin",
+			Password: "admin",
+		},
+	}
+
+	// Start the listener
+	l, err := net.Listen("tcp", ":2121")
+	assert.NoError(t, err)
+
+	// Start the server using the listener
+	s := server.NewServer(opt)
+	go func() {
+		err := s.Serve(l)
+		assert.NoError(t, err)
+	}()
+
+	// Give server 0.5 seconds to get to the listening state
+	timeout := time.NewTimer(time.Millisecond * 500)
+	for {
+		f, err := ftp.Connect("localhost:2121")
+		if err != nil && len(timeout.C) == 0 { // Retry errors
+			continue
+		}
+		assert.NoError(t, err)
+
+		assert.NoError(t, f.Login("admin", "admin"))
+		assert.Error(t, f.Login("admin", ""))
+
+		err = f.Quit()
+		assert.NoError(t, err)
+		break
+	}
+
+	assert.NoError(t, s.Shutdown())
 }
