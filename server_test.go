@@ -32,17 +32,18 @@ func runServer(t *testing.T, execute func()) {
 			Name:     "admin",
 			Password: "admin",
 		},
+		Logger: new(server.DiscardLogger),
 	}
 
-	server := server.NewServer(opt)
+	s := server.NewServer(opt)
 	go func() {
-		err := server.ListenAndServe()
-		assert.NoError(t, err)
+		err := s.ListenAndServe()
+		assert.EqualError(t, err, server.ErrServerClosed.Error())
 	}()
 
 	execute()
 
-	assert.NoError(t, server.Shutdown())
+	assert.NoError(t, s.Shutdown())
 }
 
 func TestConnect(t *testing.T) {
@@ -127,6 +128,7 @@ func TestServe(t *testing.T) {
 			Name:     "admin",
 			Password: "admin",
 		},
+		Logger: new(server.DiscardLogger),
 	}
 
 	// Start the listener
@@ -137,7 +139,7 @@ func TestServe(t *testing.T) {
 	s := server.NewServer(opt)
 	go func() {
 		err := s.Serve(l)
-		assert.NoError(t, err)
+		assert.EqualError(t, err, server.ErrServerClosed.Error())
 	}()
 
 	// Give server 0.5 seconds to get to the listening state

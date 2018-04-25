@@ -6,7 +6,9 @@ package server
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 	"strconv"
 )
@@ -69,7 +71,13 @@ type Server struct {
 	logger    Logger
 	listener  net.Listener
 	tlsConfig *tls.Config
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
+
+// ErrServerClosed is returned by ListenAndServe() or Serve() when a shutdown
+// was requested.
+var ErrServerClosed = errors.New("ftp: Server closed")
 
 // serverOptsWithDefaults copies an ServerOpts struct into a new struct,
 // then adds any default values that are missing and returns the new data.
@@ -223,12 +231,21 @@ func (server *Server) ListenAndServe() error {
 //
 func (server *Server) Serve(l net.Listener) error {
 	server.listener = l
+	server.ctx, server.cancel = context.WithCancel(context.Background())
 	sessionID := ""
 	for {
 		tcpConn, err := server.listener.Accept()
 		if err != nil {
+			select {
+			case <-server.ctx.Done():
+				return ErrServerClosed
+			default:
+			}
 			server.logger.Printf(sessionID, "listening error: %v", err)
-			break
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				continue
+			}
+			return err
 		}
 		driver, err := server.Factory.NewDriver()
 		if err != nil {
@@ -239,11 +256,13 @@ func (server *Server) Serve(l net.Listener) error {
 			go ftpConn.Serve()
 		}
 	}
-	return nil
 }
 
 // Shutdown will gracefully stop a server. Already connected clients will retain their connections
 func (server *Server) Shutdown() error {
+	if server.cancel != nil {
+		server.cancel()
+	}
 	if server.listener != nil {
 		return server.listener.Close()
 	}
