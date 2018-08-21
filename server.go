@@ -1,17 +1,24 @@
+// Copyright 2018 The goftp Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package server
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 	"strconv"
 )
 
+// Version returns the library version
 func Version() string {
-	return "0.2.2"
+	return "0.3.0"
 }
 
-// serverOpts contains parameters for server.NewServer()
+// ServerOpts contains parameters for server.NewServer()
 type ServerOpts struct {
 	// The factory that will be used to create a new FTPDriver instance for
 	// each client connection. This is a mandatory option.
@@ -64,7 +71,13 @@ type Server struct {
 	logger    Logger
 	listener  net.Listener
 	tlsConfig *tls.Config
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
+
+// ErrServerClosed is returned by ListenAndServe() or Serve() when a shutdown
+// was requested.
+var ErrServerClosed = errors.New("ftp: Server closed")
 
 // serverOptsWithDefaults copies an ServerOpts struct into a new struct,
 // then adds any default values that are missing and returns the new data.
@@ -210,12 +223,29 @@ func (server *Server) ListenAndServe() error {
 	sessionID := ""
 	server.logger.Printf(sessionID, "%s listening on %d", server.Name, server.Port)
 
-	server.listener = listener
+	return server.Serve(listener)
+}
+
+// Serve accepts connections on a given net.Listener and handles each
+// request in a new goroutine.
+//
+func (server *Server) Serve(l net.Listener) error {
+	server.listener = l
+	server.ctx, server.cancel = context.WithCancel(context.Background())
+	sessionID := ""
 	for {
 		tcpConn, err := server.listener.Accept()
 		if err != nil {
+			select {
+			case <-server.ctx.Done():
+				return ErrServerClosed
+			default:
+			}
 			server.logger.Printf(sessionID, "listening error: %v", err)
-			break
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				continue
+			}
+			return err
 		}
 		driver, err := server.Factory.NewDriver()
 		if err != nil {
@@ -226,11 +256,13 @@ func (server *Server) ListenAndServe() error {
 			go ftpConn.Serve()
 		}
 	}
-	return nil
 }
 
-// Gracefully stops a server. Already connected clients will retain their connections
+// Shutdown will gracefully stop a server. Already connected clients will retain their connections
 func (server *Server) Shutdown() error {
+	if server.cancel != nil {
+		server.cancel()
+	}
 	if server.listener != nil {
 		return server.listener.Close()
 	}

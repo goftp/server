@@ -1,14 +1,19 @@
+// Copyright 2018 The goftp Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package server
 
 import (
 	"crypto/tls"
+	"io"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
 )
 
-// A data socket is used to send non-control data between the client and
+// DataSocket describes a data socket is used to send non-control data between the client and
 // server.
 type DataSocket interface {
 	Host() string
@@ -17,6 +22,9 @@ type DataSocket interface {
 
 	// the standard io.Reader interface
 	Read(p []byte) (n int, err error)
+
+	// the standard io.ReaderFrom interface
+	ReadFrom(r io.Reader) (int64, error)
 
 	// the standard io.Writer interface
 	Write(p []byte) (n int, err error)
@@ -72,6 +80,10 @@ func (socket *ftpActiveSocket) Read(p []byte) (n int, err error) {
 	return socket.conn.Read(p)
 }
 
+func (socket *ftpActiveSocket) ReadFrom(r io.Reader) (int64, error) {
+	return socket.conn.ReadFrom(r)
+}
+
 func (socket *ftpActiveSocket) Write(p []byte) (n int, err error) {
 	return socket.conn.Write(p)
 }
@@ -81,24 +93,25 @@ func (socket *ftpActiveSocket) Close() error {
 }
 
 type ftpPassiveSocket struct {
-	conn       net.Conn
-	port       int
-	host       string
-	ingress    chan []byte
-	egress     chan []byte
-	logger     Logger
-	wg         sync.WaitGroup
-	err        error
-	tlsConfing *tls.Config
+	conn      net.Conn
+	port      int
+	host      string
+	ingress   chan []byte
+	egress    chan []byte
+	logger    Logger
+	lock      sync.Mutex
+	err       error
+	tlsConfig *tls.Config
 }
 
-func newPassiveSocket(host string, port int, logger Logger, sessionID string, tlsConfing *tls.Config) (DataSocket, error) {
+func newPassiveSocket(host string, port int, logger Logger, sessionID string, tlsConfig *tls.Config) (DataSocket, error) {
 	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
 	socket.logger = logger
 	socket.host = host
 	socket.port = port
+	socket.tlsConfig = tlsConfig
 	if err := socket.GoListenAndServe(sessionID); err != nil {
 		return nil, err
 	}
@@ -120,6 +133,16 @@ func (socket *ftpPassiveSocket) Read(p []byte) (n int, err error) {
 	return socket.conn.Read(p)
 }
 
+func (socket *ftpPassiveSocket) ReadFrom(r io.Reader) (int64, error) {
+	if err := socket.waitForOpenSocket(); err != nil {
+		return 0, err
+	}
+
+	// For normal TCPConn, this will use sendfile syscall; if not,
+	// it will just downgrade to normal read/write procedure
+	return io.Copy(socket.conn, r)
+}
+
 func (socket *ftpPassiveSocket) Write(p []byte) (n int, err error) {
 	if err := socket.waitForOpenSocket(); err != nil {
 		return 0, err
@@ -128,7 +151,6 @@ func (socket *ftpPassiveSocket) Write(p []byte) (n int, err error) {
 }
 
 func (socket *ftpPassiveSocket) Close() error {
-	//socket.logger.Print("closing passive data socket")
 	if socket.conn != nil {
 		return socket.conn.Close()
 	}
@@ -158,15 +180,15 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 	}
 
 	socket.port = port
-	socket.wg.Add(1)
-
-	if socket.tlsConfing != nil {
-		listener = tls.NewListener(listener, socket.tlsConfing)
+	if socket.tlsConfig != nil {
+		listener = tls.NewListener(listener, socket.tlsConfig)
 	}
 
 	go func() {
+		socket.lock.Lock()
+		defer socket.lock.Unlock()
+
 		conn, err := listener.Accept()
-		socket.wg.Done()
 		if err != nil {
 			socket.err = err
 			return
@@ -178,9 +200,10 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 }
 
 func (socket *ftpPassiveSocket) waitForOpenSocket() error {
+	socket.lock.Lock()
+	defer socket.lock.Unlock()
 	if socket.conn != nil {
 		return nil
 	}
-	socket.wg.Wait()
 	return socket.err
 }
