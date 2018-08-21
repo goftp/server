@@ -157,7 +157,7 @@ func (cmd commandFeat) RequireAuth() bool {
 
 var (
 	feats    = "Extensions supported:\n%s"
-	featCmds = ""
+	featCmds = " UTF8\n"
 )
 
 func init() {
