@@ -180,8 +180,8 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 	}
 
 	socket.port = port
-	if socket.tlsConfing != nil {
-		listener = tls.NewListener(listener, socket.tlsConfing)
+	if socket.tlsConfig != nil {
+		listener = tls.NewListener(listener, socket.tlsConfig)
 	}
 
 	go func() {
