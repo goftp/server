@@ -6,11 +6,11 @@ package server
 
 import (
 	"crypto/tls"
+	"io"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
-	"io"
 )
 
 // DataSocket describes a data socket is used to send non-control data between the client and
@@ -93,24 +93,25 @@ func (socket *ftpActiveSocket) Close() error {
 }
 
 type ftpPassiveSocket struct {
-	conn       net.Conn
-	port       int
-	host       string
-	ingress    chan []byte
-	egress     chan []byte
-	logger     Logger
-	lock       sync.Mutex
-	err        error
-	tlsConfing *tls.Config
+	conn      net.Conn
+	port      int
+	host      string
+	ingress   chan []byte
+	egress    chan []byte
+	logger    Logger
+	lock      sync.Mutex
+	err       error
+	tlsConfig *tls.Config
 }
 
-func newPassiveSocket(host string, port int, logger Logger, sessionID string, tlsConfing *tls.Config) (DataSocket, error) {
+func newPassiveSocket(host string, port int, logger Logger, sessionID string, tlsConfig *tls.Config) (DataSocket, error) {
 	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
 	socket.logger = logger
 	socket.host = host
 	socket.port = port
+	socket.tlsConfig = tlsConfig
 	if err := socket.GoListenAndServe(sessionID); err != nil {
 		return nil, err
 	}
@@ -179,8 +180,8 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 	}
 
 	socket.port = port
-	if socket.tlsConfing != nil {
-		listener = tls.NewListener(listener, socket.tlsConfing)
+	if socket.tlsConfig != nil {
+		listener = tls.NewListener(listener, socket.tlsConfig)
 	}
 
 	go func() {

@@ -915,7 +915,7 @@ func (cmd commandPbsz) RequireParam() bool {
 }
 
 func (cmd commandPbsz) RequireAuth() bool {
-	return true
+	return false
 }
 
 func (cmd commandPbsz) Execute(conn *Conn, param string) {
@@ -937,7 +937,7 @@ func (cmd commandProt) RequireParam() bool {
 }
 
 func (cmd commandProt) RequireAuth() bool {
-	return true
+	return false
 }
 
 func (cmd commandProt) Execute(conn *Conn, param string) {
@@ -1129,5 +1129,9 @@ func (cmd commandUser) RequireAuth() bool {
 
 func (cmd commandUser) Execute(conn *Conn, param string) {
 	conn.reqUser = param
-	conn.writeMessage(331, "User name ok, password required")
+	if conn.tls || conn.tlsConfig == nil {
+		conn.writeMessage(331, "User name ok, password required")
+	} else {
+		conn.writeMessage(534, "Unsecured login not allowed. AUTH TLS required")
+	}
 }
