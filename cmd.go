@@ -543,7 +543,7 @@ func (cmd commandPass) RequireAuth() bool {
 func (cmd commandPass) Execute(conn *Conn, param string) {
 	ok, err := conn.server.Auth.CheckPasswd(conn.reqUser, param)
 	if err != nil {
-		conn.writeMessage(550, "Checking password error")
+		conn.writeMessage(550, err.Error())
 		return
 	}
 
@@ -578,10 +578,13 @@ func (cmd commandPasv) Execute(conn *Conn, param string) {
 	listenIP := conn.passiveListenIP()
 	lastIdx := strings.LastIndex(listenIP, ":")
 	if lastIdx <= 0 {
-		conn.writeMessage(425, "Data connection failed")
-		return
+		// listenIP[:lastIdx]
+		// conn.writeMessage(425, "Data connection failed")
+		// return
+	} else {
+		listenIP = listenIP[:lastIdx]
 	}
-	socket, err := newPassiveSocket(listenIP[:lastIdx], conn.PassivePort(), conn.logger, conn.sessionID, conn.tlsConfig)
+	socket, err := newPassiveSocket(listenIP, conn.PassivePort(), conn.logger, conn.sessionID, conn.tlsConfig)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -589,7 +592,7 @@ func (cmd commandPasv) Execute(conn *Conn, param string) {
 	conn.dataConn = socket
 	p1 := socket.Port() / 256
 	p2 := socket.Port() - (p1 * 256)
-	quads := strings.Split(listenIP[:lastIdx], ".")
+	quads := strings.Split(listenIP, ".")
 	target := fmt.Sprintf("(%s,%s,%s,%s,%d,%d)", quads[0], quads[1], quads[2], quads[3], p1, p2)
 	msg := "Entering Passive Mode " + target
 	conn.writeMessage(227, msg)
@@ -615,6 +618,10 @@ func (cmd commandPort) RequireAuth() bool {
 
 func (cmd commandPort) Execute(conn *Conn, param string) {
 	nums := strings.Split(param, ",")
+	if len(nums) < 6 {
+		conn.writeMessage(425, "Data connection failed")
+		return
+	}
 	portOne, _ := strconv.Atoi(nums[4])
 	portTwo, _ := strconv.Atoi(nums[5])
 	port := (portOne * 256) + portTwo
@@ -725,7 +732,7 @@ func (cmd commandRest) Execute(conn *Conn, param string) {
 
 	conn.appendData = true
 
-	conn.writeMessage(350, fmt.Sprintln("Start transfer from", conn.lastFilePos))
+	conn.writeMessage(350, fmt.Sprint("Start transfer from ", conn.lastFilePos))
 }
 
 // commandRnfr responds to the RNFR FTP command. It's the first of two commands

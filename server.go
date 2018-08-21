@@ -22,40 +22,40 @@ func Version() string {
 type ServerOpts struct {
 	// The factory that will be used to create a new FTPDriver instance for
 	// each client connection. This is a mandatory option.
-	Factory DriverFactory
+	Factory DriverFactory `json:"-"`
 
-	Auth Auth
+	Auth Auth `json:"-"`
 
 	// Server Name, Default is Go Ftp Server
-	Name string
+	Name string `json:"name"`
 
 	// The hostname that the FTP server should listen on. Optional, defaults to
 	// "::", which means all hostnames on ipv4 and ipv6.
-	Hostname string
+	Hostname string `json:"hostName"`
 
 	// Public IP of the server
-	PublicIp string
+	PublicIp string `json:"publicIP"`
 
 	// Passive ports
-	PassivePorts string
+	PassivePorts string `json:"passivePorts"`
 
 	// The port that the FTP should listen on. Optional, defaults to 3000. In
 	// a production environment you will probably want to change this to 21.
-	Port int
+	Port int `json:"port"`
 
 	// use tls, default is false
-	TLS bool
+	TLS bool `json:"tls"`
 
 	// if tls used, cert file is required
-	CertFile string
+	CertFile string `json:"certFile"`
 
 	// if tls used, key file is required
-	KeyFile string
+	KeyFile string `json:"keyFile"`
 
 	// If ture TLS is used in RFC4217 mode
-	ExplicitFTPS bool
+	ExplicitFTPS bool `json:"explicitFTPS"`
 
-	WelcomeMessage string
+	WelcomeMessage string `json:"welcomeMessage"`
 
 	// A logger implementation, if nil the StdLogger is used
 	Logger Logger

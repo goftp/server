@@ -79,7 +79,7 @@ func (conn *Conn) PassivePort() int {
 		return minPort + mrand.Intn(maxPort-minPort)
 	}
 	// let system automatically chose one port
-	return 0
+	return 20020 + mrand.Intn(200)
 }
 
 // returns a random 20 char string that can be used as a unique session ID
@@ -176,6 +176,11 @@ func (conn *Conn) parseLine(line string) (string, string) {
 
 // writeMessage will send a standard FTP response back to the client.
 func (conn *Conn) writeMessage(code int, message string) (wrote int, err error) {
+	if code == 550 || code == 426 {
+		if conn.dataConn != nil {
+			defer conn.dataConn.Close()
+		}
+	}
 	conn.logger.PrintResponse(conn.sessionID, code, message)
 	line := fmt.Sprintf("%d %s\r\n", code, message)
 	wrote, err = conn.controlWriter.WriteString(line)
