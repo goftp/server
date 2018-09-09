@@ -8,9 +8,12 @@ import (
 	"crypto/tls"
 	"io"
 	"net"
+	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 // DataSocket describes a data socket is used to send non-control data between the client and
@@ -104,18 +107,51 @@ type ftpPassiveSocket struct {
 	tlsConfig *tls.Config
 }
 
-func newPassiveSocket(host string, port int, logger Logger, sessionID string, tlsConfig *tls.Config) (DataSocket, error) {
+// Detect if an error is "bind: address already in use"
+//
+// Originally from https://stackoverflow.com/a/52152912/164234
+func isErrorAddressAlreadyInUse(err error) bool {
+	errOpError, ok := err.(*net.OpError)
+	if !ok {
+		return false
+	}
+	errSyscallError, ok := errOpError.Err.(*os.SyscallError)
+	if !ok {
+		return false
+	}
+	errErrno, ok := errSyscallError.Err.(syscall.Errno)
+	if !ok {
+		return false
+	}
+	if errErrno == syscall.EADDRINUSE {
+		return true
+	}
+	const WSAEADDRINUSE = 10048
+	if runtime.GOOS == "windows" && errErrno == WSAEADDRINUSE {
+		return true
+	}
+	return false
+}
+
+func newPassiveSocket(host string, port func() int, logger Logger, sessionID string, tlsConfig *tls.Config) (DataSocket, error) {
 	socket := new(ftpPassiveSocket)
 	socket.ingress = make(chan []byte)
 	socket.egress = make(chan []byte)
 	socket.logger = logger
 	socket.host = host
-	socket.port = port
 	socket.tlsConfig = tlsConfig
-	if err := socket.GoListenAndServe(sessionID); err != nil {
-		return nil, err
+	const retries = 10
+	var err error
+	for i := 1; i <= retries; i++ {
+		socket.port = port()
+		err = socket.GoListenAndServe(sessionID)
+		if err != nil && socket.port != 0 && isErrorAddressAlreadyInUse(err) {
+			// choose a different port on error already in use
+			continue
+		}
+		break
 	}
-	return socket, nil
+	return socket, err
 }
 
 func (socket *ftpPassiveSocket) Host() string {
