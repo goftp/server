@@ -195,6 +195,7 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 		}
 		socket.err = nil
 		socket.conn = conn
+		_ = listener.Close()
 	}()
 	return nil
 }
