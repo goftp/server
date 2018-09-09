@@ -169,10 +169,7 @@ func init() {
 }
 
 func (cmd commandFeat) Execute(conn *Conn, param string) {
-	if conn.tlsConfig != nil {
-		featCmds += " AUTH TLS\n PBSZ\n PROT\n"
-	}
-	conn.writeMessageMultiline(211, fmt.Sprintf(feats, featCmds))
+	conn.writeMessageMultiline(211, conn.server.feats)
 }
 
 // cmdCdup responds to the CDUP FTP command.
