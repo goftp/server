@@ -220,8 +220,8 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 		listener = tls.NewListener(listener, socket.tlsConfig)
 	}
 
+	socket.lock.Lock()
 	go func() {
-		socket.lock.Lock()
 		defer socket.lock.Unlock()
 
 		conn, err := listener.Accept()
