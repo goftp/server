@@ -169,10 +169,7 @@ func init() {
 }
 
 func (cmd commandFeat) Execute(conn *Conn, param string) {
-	if conn.tlsConfig != nil {
-		featCmds += " AUTH TLS\n PBSZ\n PROT\n"
-	}
-	conn.writeMessageMultiline(211, fmt.Sprintf(feats, featCmds))
+	conn.writeMessageMultiline(211, conn.server.feats)
 }
 
 // cmdCdup responds to the CDUP FTP command.
@@ -311,7 +308,7 @@ func (cmd commandEpsv) Execute(conn *Conn, param string) {
 		return
 	}
 
-	socket, err := newPassiveSocket(addr[:lastIdx], conn.PassivePort(), conn.logger, conn.sessionID, conn.tlsConfig)
+	socket, err := newPassiveSocket(addr[:lastIdx], conn.PassivePort, conn.logger, conn.sessionID, conn.tlsConfig)
 	if err != nil {
 		log.Println(err)
 		conn.writeMessage(425, "Data connection failed")
@@ -581,7 +578,7 @@ func (cmd commandPasv) Execute(conn *Conn, param string) {
 		conn.writeMessage(425, "Data connection failed")
 		return
 	}
-	socket, err := newPassiveSocket(listenIP[:lastIdx], conn.PassivePort(), conn.logger, conn.sessionID, conn.tlsConfig)
+	socket, err := newPassiveSocket(listenIP[:lastIdx], conn.PassivePort, conn.logger, conn.sessionID, conn.tlsConfig)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
