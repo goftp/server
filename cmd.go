@@ -343,18 +343,22 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 		return
 	}
 
-	if info == nil || !info.IsDir() {
-		conn.logger.Printf(conn.sessionID, "%s is not a dir.\n", path)
+	if info == nil {
+		conn.logger.Printf(conn.sessionID, "%s: no such file or directory.\n", path)
 		return
 	}
 	var files []FileInfo
-	err = conn.driver.ListDir(path, func(f FileInfo) error {
-		files = append(files, f)
-		return nil
-	})
-	if err != nil {
-		conn.writeMessage(550, err.Error())
-		return
+	if info.IsDir() {
+		err = conn.driver.ListDir(path, func(f FileInfo) error {
+			files = append(files, f)
+			return nil
+		})
+		if err != nil {
+			conn.writeMessage(550, err.Error())
+			return
+		}
+	} else {
+		files = append(files, info)
 	}
 
 	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
