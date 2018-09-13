@@ -691,6 +691,7 @@ func (cmd commandRetr) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
 	defer func() {
 		conn.lastFilePos = 0
+		conn.appendData = false
 	}()
 	bytes, data, err := conn.driver.GetFile(path, conn.lastFilePos)
 	if err == nil {
