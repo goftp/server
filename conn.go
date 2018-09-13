@@ -108,7 +108,7 @@ func (conn *Conn) Serve() {
 		line, err := conn.controlReader.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
-				conn.logger.Print(conn.sessionID, fmt.Sprintln("read error:", err))
+				conn.logger.Print(conn.sessionID, fmt.Sprint("read error:", err))
 			}
 
 			break
