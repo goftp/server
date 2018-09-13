@@ -217,7 +217,7 @@ func (cmd commandCwd) Execute(conn *Conn, param string) {
 		conn.namePrefix = path
 		conn.writeMessage(250, "Directory changed to "+path)
 	} else {
-		conn.writeMessage(550, fmt.Sprint("Directory change to", path, "failed:", err))
+		conn.writeMessage(550, fmt.Sprint("Directory change to ", path, " failed: ", err))
 	}
 }
 
@@ -243,7 +243,7 @@ func (cmd commandDele) Execute(conn *Conn, param string) {
 	if err == nil {
 		conn.writeMessage(250, "File deleted")
 	} else {
-		conn.writeMessage(550, fmt.Sprint("File delete failed:", err))
+		conn.writeMessage(550, fmt.Sprint("File delete failed: ", err))
 	}
 }
 
@@ -471,7 +471,7 @@ func (cmd commandMkd) Execute(conn *Conn, param string) {
 	if err == nil {
 		conn.writeMessage(257, "Directory created")
 	} else {
-		conn.writeMessage(550, fmt.Sprint("Action not taken:", err))
+		conn.writeMessage(550, fmt.Sprint("Action not taken: ", err))
 	}
 }
 
@@ -727,7 +727,7 @@ func (cmd commandRest) Execute(conn *Conn, param string) {
 
 	conn.appendData = true
 
-	conn.writeMessage(350, fmt.Sprint("Start transfer from", conn.lastFilePos))
+	conn.writeMessage(350, fmt.Sprint("Start transfer from ", conn.lastFilePos))
 }
 
 // commandRnfr responds to the RNFR FTP command. It's the first of two commands
@@ -777,7 +777,7 @@ func (cmd commandRnto) Execute(conn *Conn, param string) {
 	if err == nil {
 		conn.writeMessage(250, "File renamed")
 	} else {
-		conn.writeMessage(550, fmt.Sprint("Action not taken", err))
+		conn.writeMessage(550, fmt.Sprint("Action not taken: ", err))
 	}
 }
 
@@ -803,7 +803,7 @@ func (cmd commandRmd) Execute(conn *Conn, param string) {
 	if err == nil {
 		conn.writeMessage(250, "Directory deleted")
 	} else {
-		conn.writeMessage(550, fmt.Sprint("Directory delete failed:", err))
+		conn.writeMessage(550, fmt.Sprint("Directory delete failed: ", err))
 	}
 }
 
@@ -1025,7 +1025,7 @@ func (cmd commandStor) Execute(conn *Conn, param string) {
 		msg := "OK, received " + strconv.Itoa(int(bytes)) + " bytes"
 		conn.writeMessage(226, msg)
 	} else {
-		conn.writeMessage(450, fmt.Sprint("error during transfer:", err))
+		conn.writeMessage(450, fmt.Sprint("error during transfer: ", err))
 	}
 }
 
