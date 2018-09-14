@@ -102,7 +102,7 @@ type ftpPassiveSocket struct {
 	ingress   chan []byte
 	egress    chan []byte
 	logger    Logger
-	lock      sync.Mutex
+	lock      sync.Mutex // protects conn and err
 	err       error
 	tlsConfig *tls.Config
 }
@@ -163,15 +163,19 @@ func (socket *ftpPassiveSocket) Port() int {
 }
 
 func (socket *ftpPassiveSocket) Read(p []byte) (n int, err error) {
-	if err := socket.waitForOpenSocket(); err != nil {
-		return 0, err
+	socket.lock.Lock()
+	defer socket.lock.Unlock()
+	if socket.err != nil {
+		return 0, socket.err
 	}
 	return socket.conn.Read(p)
 }
 
 func (socket *ftpPassiveSocket) ReadFrom(r io.Reader) (int64, error) {
-	if err := socket.waitForOpenSocket(); err != nil {
-		return 0, err
+	socket.lock.Lock()
+	defer socket.lock.Unlock()
+	if socket.err != nil {
+		return 0, socket.err
 	}
 
 	// For normal TCPConn, this will use sendfile syscall; if not,
@@ -180,13 +184,17 @@ func (socket *ftpPassiveSocket) ReadFrom(r io.Reader) (int64, error) {
 }
 
 func (socket *ftpPassiveSocket) Write(p []byte) (n int, err error) {
-	if err := socket.waitForOpenSocket(); err != nil {
-		return 0, err
+	socket.lock.Lock()
+	defer socket.lock.Unlock()
+	if socket.err != nil {
+		return 0, socket.err
 	}
 	return socket.conn.Write(p)
 }
 
 func (socket *ftpPassiveSocket) Close() error {
+	socket.lock.Lock()
+	defer socket.lock.Unlock()
 	if socket.conn != nil {
 		return socket.conn.Close()
 	}
@@ -234,13 +242,4 @@ func (socket *ftpPassiveSocket) GoListenAndServe(sessionID string) (err error) {
 		_ = listener.Close()
 	}()
 	return nil
-}
-
-func (socket *ftpPassiveSocket) waitForOpenSocket() error {
-	socket.lock.Lock()
-	defer socket.lock.Unlock()
-	if socket.conn != nil {
-		return nil
-	}
-	return socket.err
 }
