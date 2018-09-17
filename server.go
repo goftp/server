@@ -164,7 +164,7 @@ func NewServer(opts *ServerOpts) *Server {
 func (server *Server) newConn(tcpConn net.Conn, driver Driver) *Conn {
 	c := new(Conn)
 	c.namePrefix = "/"
-	c.conn = tcpConn
+	c.Conn = tcpConn
 	c.controlReader = bufio.NewReader(tcpConn)
 	c.controlWriter = bufio.NewWriter(tcpConn)
 	c.driver = driver

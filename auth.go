@@ -4,9 +4,13 @@
 
 package server
 
+import "net"
+
 // Auth is an interface to auth your ftp user login.
 type Auth interface {
-	CheckPasswd(string, string) (bool, error)
+	// params - username, password, connection
+	// returns - true if the user is authenticated
+	CheckPasswd(string, string, net.Conn) (bool, error)
 }
 
 var (
@@ -20,7 +24,7 @@ type SimpleAuth struct {
 }
 
 // CheckPasswd will check user's password
-func (a *SimpleAuth) CheckPasswd(name, pass string) (bool, error) {
+func (a *SimpleAuth) CheckPasswd(name, pass string, conn net.Conn) (bool, error) {
 	if name != a.Name || pass != a.Password {
 		return false, nil
 	}

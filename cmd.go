@@ -340,6 +340,7 @@ func (cmd commandList) Execute(conn *Conn, param string) {
 	info, err := conn.driver.Stat(path)
 	if err != nil {
 		conn.writeMessage(550, err.Error())
+		conn.sendOutofbandData(nil)
 		return
 	}
 
@@ -403,6 +404,7 @@ func (cmd commandNlst) Execute(conn *Conn, param string) {
 	info, err := conn.driver.Stat(path)
 	if err != nil {
 		conn.writeMessage(550, err.Error())
+		conn.sendOutofbandData(nil)
 		return
 	}
 	if !info.IsDir() {
@@ -417,6 +419,7 @@ func (cmd commandNlst) Execute(conn *Conn, param string) {
 	})
 	if err != nil {
 		conn.writeMessage(550, err.Error())
+		conn.sendOutofbandData(nil)
 		return
 	}
 	conn.writeMessage(150, "Opening ASCII mode data connection for file list")
@@ -542,7 +545,7 @@ func (cmd commandPass) RequireAuth() bool {
 }
 
 func (cmd commandPass) Execute(conn *Conn, param string) {
-	ok, err := conn.server.Auth.CheckPasswd(conn.reqUser, param)
+	ok, err := conn.server.Auth.CheckPasswd(conn.reqUser, param, conn.Conn)
 	if err != nil {
 		conn.writeMessage(550, "Checking password error")
 		return
