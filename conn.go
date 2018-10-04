@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -43,6 +44,7 @@ type Conn struct {
 	appendData    bool
 	closed        bool
 	tls           bool
+	timeoutAt     time.Time
 }
 
 func (conn *Conn) LoginUser() string {
@@ -103,8 +105,27 @@ func (conn *Conn) Serve() {
 	conn.logger.Print(conn.sessionID, "Connection Established")
 	// send welcome
 	conn.writeMessage(220, conn.server.WelcomeMessage)
+
+	// Set a timeout for the connection.
+	conn.timeoutAt = time.Now().Add(time.Minute * 5)
+
+	// Spin up a goroutine that will close the
+	// connection if the timeout is reached.
+	go func() {
+		for {
+			if time.Until(conn.timeoutAt) <= 0 {
+				conn.closed = true
+				conn.logger.Print(conn.sessionID, "Connection Timeout")
+				break
+			}
+		}
+	}()
+
 	// read commands
 	for {
+		// Reset the timeout for the connection.
+		conn.timeoutAt = time.Now().Add(time.Minute * 5)
+
 		line, err := conn.controlReader.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
