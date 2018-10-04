@@ -109,8 +109,8 @@ func (conn *Conn) Serve() {
 	// Set a timeout for the connection.
 	conn.timeoutAt = time.Now().Add(time.Minute * 5)
 
-	// Spin up a goroutine that will close the
-	// connection if the timeout is reached.
+	// Spin up a goroutine that will initialize a graceful
+	// shutdown of the connection if the timeout is reached.
 	go func() {
 		for {
 			if time.Until(conn.timeoutAt) <= 0 {
