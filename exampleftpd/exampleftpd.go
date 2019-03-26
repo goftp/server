@@ -21,6 +21,7 @@ func main() {
 		pass = flag.String("pass", "123456", "Password for login")
 		port = flag.Int("port", 2121, "Port")
 		host = flag.String("host", "localhost", "Port")
+		pasv = flat.String("pasv", "3001-3900", "Passive port range")
 	)
 	flag.Parse()
 	if *root == "" {
@@ -36,6 +37,7 @@ func main() {
 		Factory:  factory,
 		Port:     *port,
 		Hostname: *host,
+		PassivePorts: *pasv,
 		Auth:     &server.SimpleAuth{Name: *user, Password: *pass},
 	}
 
