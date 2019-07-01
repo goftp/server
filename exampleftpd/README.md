@@ -8,7 +8,7 @@ Change to this directory then build it with `go build`
 $ ./exampleftpd -h
 Usage of ./exampleftpd:
   -host string
-    	Port (default "localhost")
+    	Host (default "localhost")
   -pass string
     	Password for login (default "123456")
   -port int
