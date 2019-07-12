@@ -63,6 +63,7 @@ var (
 		"USER": commandUser{},
 		"XCUP": commandCdup{},
 		"XCWD": commandCwd{},
+		"XMKD": commandMkd{},
 		"XPWD": commandPwd{},
 		"XRMD": commandRmd{},
 	}
