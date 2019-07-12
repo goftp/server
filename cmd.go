@@ -90,6 +90,8 @@ func (cmd commandAllo) Execute(conn *Conn, param string) {
 	conn.writeMessage(202, "Obsolete")
 }
 
+// commandAppe responds to the APPE FTP command. It allows the user to upload a
+// new file but always append if file exists otherwise create one.
 type commandAppe struct{}
 
 func (cmd commandAppe) IsExtend() bool {
@@ -97,7 +99,7 @@ func (cmd commandAppe) IsExtend() bool {
 }
 
 func (cmd commandAppe) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandAppe) RequireAuth() bool {
@@ -105,8 +107,16 @@ func (cmd commandAppe) RequireAuth() bool {
 }
 
 func (cmd commandAppe) Execute(conn *Conn, param string) {
-	conn.appendData = true
-	conn.writeMessage(202, "Obsolete")
+	targetPath := conn.buildPath(param)
+	conn.writeMessage(150, "Data transfer starting")
+
+	bytes, err := conn.driver.PutFile(targetPath, conn.dataConn, true)
+	if err == nil {
+		msg := "OK, received " + strconv.Itoa(int(bytes)) + " bytes"
+		conn.writeMessage(226, msg)
+	} else {
+		conn.writeMessage(450, fmt.Sprint("error during transfer: ", err))
+	}
 }
 
 type commandOpts struct{}
