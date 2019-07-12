@@ -5,6 +5,7 @@
 package server_test
 
 import (
+	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -67,6 +68,10 @@ func TestConnect(t *testing.T) {
 			assert.NoError(t, err)
 			assert.EqualValues(t, 1, len(names))
 			assert.EqualValues(t, "server_test.go", names[0])
+
+			bs, err := ioutil.ReadFile("./testdata/server_test.go")
+			assert.NoError(t, err)
+			assert.EqualValues(t, content, string(bs))
 
 			entries, err := f.List("/")
 			assert.NoError(t, err)
