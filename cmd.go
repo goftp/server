@@ -65,6 +65,7 @@ var (
 		"USER": commandUser{},
 		"XCUP": commandCdup{},
 		"XCWD": commandCwd{},
+		"XMKD": commandMkd{},
 		"XPWD": commandPwd{},
 		"XRMD": commandRmd{},
 	}
@@ -92,6 +93,8 @@ func (cmd commandAllo) Execute(conn *Conn, param string) {
 	conn.writeMessage(202, "Obsolete")
 }
 
+// commandAppe responds to the APPE FTP command. It allows the user to upload a
+// new file but always append if file exists otherwise create one.
 type commandAppe struct{}
 
 func (cmd commandAppe) IsExtend() bool {
@@ -99,7 +102,7 @@ func (cmd commandAppe) IsExtend() bool {
 }
 
 func (cmd commandAppe) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandAppe) RequireAuth() bool {
@@ -107,8 +110,16 @@ func (cmd commandAppe) RequireAuth() bool {
 }
 
 func (cmd commandAppe) Execute(conn *Conn, param string) {
-	conn.appendData = true
-	conn.writeMessage(202, "Obsolete")
+	targetPath := conn.buildPath(param)
+	conn.writeMessage(150, "Data transfer starting")
+
+	bytes, err := conn.driver.PutFile(targetPath, conn.dataConn, true)
+	if err == nil {
+		msg := "OK, received " + strconv.Itoa(int(bytes)) + " bytes"
+		conn.writeMessage(226, msg)
+	} else {
+		conn.writeMessage(450, fmt.Sprint("error during transfer: ", err))
+	}
 }
 
 type commandOpts struct{}
@@ -367,13 +378,7 @@ func (cmd commandEpsv) RequireAuth() bool {
 
 func (cmd commandEpsv) Execute(conn *Conn, param string) {
 	addr := conn.passiveListenIP()
-	lastIdx := strings.LastIndex(addr, ":")
-	if lastIdx <= 0 {
-		conn.writeMessage(425, "Data connection failed")
-		return
-	}
-
-	socket, err := newPassiveSocket(addr[:lastIdx], conn.PassivePort, conn.logger, conn.sessionID, conn.tlsConfig)
+	socket, err := newPassiveSocket(addr, conn.PassivePort, conn.logger, conn.sessionID, conn.tlsConfig)
 	if err != nil {
 		log.Println(err)
 		conn.writeMessage(425, "Data connection failed")
@@ -642,12 +647,7 @@ func (cmd commandPasv) RequireAuth() bool {
 
 func (cmd commandPasv) Execute(conn *Conn, param string) {
 	listenIP := conn.passiveListenIP()
-	lastIdx := strings.LastIndex(listenIP, ":")
-	if lastIdx <= 0 {
-		conn.writeMessage(425, "Data connection failed")
-		return
-	}
-	socket, err := newPassiveSocket(listenIP[:lastIdx], conn.PassivePort, conn.logger, conn.sessionID, conn.tlsConfig)
+	socket, err := newPassiveSocket(listenIP, conn.PassivePort, conn.logger, conn.sessionID, conn.tlsConfig)
 	if err != nil {
 		conn.writeMessage(425, "Data connection failed")
 		return
@@ -655,7 +655,7 @@ func (cmd commandPasv) Execute(conn *Conn, param string) {
 	conn.dataConn = socket
 	p1 := socket.Port() / 256
 	p2 := socket.Port() - (p1 * 256)
-	quads := strings.Split(listenIP[:lastIdx], ".")
+	quads := strings.Split(listenIP, ".")
 	target := fmt.Sprintf("(%s,%s,%s,%s,%d,%d)", quads[0], quads[1], quads[2], quads[3], p1, p2)
 	msg := "Entering Passive Mode " + target
 	conn.writeMessage(227, msg)
@@ -763,6 +763,9 @@ func (cmd commandRetr) Execute(conn *Conn, param string) {
 		defer data.Close()
 		conn.writeMessage(150, fmt.Sprintf("Data transfer starting %v bytes", bytes))
 		err = conn.sendOutofBandDataWriter(data)
+		if err != nil {
+			conn.writeMessage(551, "Error reading file")
+		}
 	} else {
 		conn.writeMessage(551, "File not available")
 	}

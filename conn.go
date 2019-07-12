@@ -61,7 +61,12 @@ func (conn *Conn) passiveListenIP() string {
 	if len(conn.PublicIp()) > 0 {
 		return conn.PublicIp()
 	}
-	return conn.conn.LocalAddr().String()
+	listenIP := conn.conn.LocalAddr().String()
+	lastIdx := strings.LastIndex(listenIP, ":")
+	if lastIdx <= 0 {
+		return listenIP
+	}
+	return listenIP[:lastIdx]
 }
 
 func (conn *Conn) PassivePort() int {
